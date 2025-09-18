@@ -35,13 +35,13 @@
   </main>
 
   <script>
-    // CSV publicado desde Google Sheets
+    // 📌 Tu Google Sheet publicado como CSV
     const SHEET_CSV_URL =
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
 
-    // Tu URL real de Apps Script
+    // 📌 Tu Apps Script URL real
     const SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycby7SrJSI9HLssuYwysTvcXHqoztI9lzDrAtQhhQxFzGkOWnfq9ovT5WVWsBjiGmMdW4Ng/exec";
+      "https://script.google.com/macros/s/AKfycbyvWDsll9xUW_XZn8ZNB9G0tuAYhZGDRl_tU5kTTiLpK-Zbi0gQHLRmp4yqPIj5CfnHrQ/exec";
 
     const listView = document.getElementById("listView");
     const detailView = document.getElementById("detailView");
@@ -51,7 +51,7 @@
 
     let products = [];
 
-    // Parsear el CSV de Google Sheets
+    // Parsear CSV desde Sheets
     Papa.parse(SHEET_CSV_URL, {
       download: true,
       header: true,
@@ -61,7 +61,7 @@
       },
     });
 
-    // Render de tabla
+    // Renderizar tabla
     function renderTable() {
       tableBody.innerHTML = "";
       products.forEach((row) => {
@@ -82,7 +82,7 @@
       });
     }
 
-    // Vista detalle
+    // Renderizar vista de detalle
     function showDetail(sku) {
       const product = products.find((p) => p.SKU === sku);
       if (!product) return;
@@ -97,10 +97,8 @@
           ${[product.Imagen1, product.Imagen2, product.Imagen3]
             .map((url) =>
               url
-                ? `<img src="${driveToDirect(
-                    url
-                  )}" class="w-full h-48 object-cover rounded border"/>`
-                : ""
+                ? `<img src="${driveToDirect(url)}" class="w-full h-48 object-cover rounded border"/>`
+                : `<div class="w-full h-48 flex items-center justify-center border bg-gray-100 text-gray-500 rounded">Imagen no disponible</div>`
             )
             .join("")}
         </div>
@@ -112,10 +110,10 @@
       listView.classList.remove("hidden");
     });
 
-    // Convierte links de Drive en URL de tu Apps Script
+    // Convierte link de Drive → Apps Script
     function driveToDirect(url) {
       if (!url) return "";
-      const match = url.match(/[-\w]{25,}/); // extrae el ID del link
+      const match = url.match(/[-\w]{25,}/);
       const id = match ? match[0] : url;
       return `${SCRIPT_URL}?id=${id}`;
     }
