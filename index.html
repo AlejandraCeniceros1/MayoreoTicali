@@ -89,12 +89,12 @@
         <h2 class="text-xl font-bold mb-2">${product.SKU} - ${product.ESTILO}</h2>
         <p class="mb-2">${product.DESCRIPCION}</p>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          ${[product.Imagen1, product.Imagen2, product.Imagen3].map(url => 
-            url ? `<img src="${driveToDirect(url)}" 
-                      class="w-full h-48 object-cover rounded border" />` : ""
-          ).join("")}
+            ${[product.Imagen1, product.Imagen2, product.Imagen3].map(url => 
+            url ? `<iframe src="${driveToDirect(url)}" class="w-full h-48 border rounded"></iframe>` : ""
+            ).join("")}
         </div>
-      `;
+        `;
+
     }
 
     backBtn.addEventListener("click", () => {
