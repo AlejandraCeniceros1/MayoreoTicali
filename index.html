@@ -12,18 +12,20 @@
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</h1>
 
-    <!-- 📋 LIST VIEW -->
-    <section id="listView">
-      <div class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
-        <label for="filterEstilo" class="font-medium">Estilo:</label>
-        <select id="filterEstilo" class="border rounded px-3 py-2 w-full sm:w-auto">
-          <option value="">Todos</option>
-        </select>
-        <input id="searchBox" type="text" placeholder="Buscar..." 
-          class="border rounded px-3 py-2 w-full sm:w-64" />
-      </div>
+    <!-- Controles (solo lista) -->
+    <section id="controls" class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
+      <label for="filterEstilo" class="font-medium">Estilo:</label>
+      <select id="filterEstilo" class="border rounded px-3 py-2 w-full sm:w-56">
+        <option value="">Todos</option>
+      </select>
 
-      <!-- Tabla desktop -->
+      <input id="searchBox" type="text" placeholder="Buscar SKU/estilo/descripción…" 
+        class="border rounded px-3 py-2 w-full sm:w-80" />
+    </section>
+
+    <!-- LIST VIEW -->
+    <section id="listView">
+      <!-- Tabla (desktop) -->
       <div class="hidden sm:block">
         <table class="min-w-full border text-sm bg-white shadow rounded overflow-hidden">
           <thead class="bg-stone-200">
@@ -39,7 +41,7 @@
         <div id="paginationDesktop" class="flex justify-center items-center gap-2 mt-4"></div>
       </div>
 
-      <!-- Cards móvil -->
+      <!-- Cards (móvil) -->
       <div id="cardsContainer" class="sm:hidden grid gap-4"></div>
       <div id="paginationMobile" class="sm:hidden flex justify-center items-center gap-2 mt-4"></div>
     </section>
@@ -51,18 +53,22 @@
     </section>
   </main>
 
-  <!-- Modal para ampliar imagen -->
-  <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+  <!-- Modal para ampliar imagen (solo se abre en móvil) -->
+  <div id="imageModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50">
     <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl font-bold cursor-pointer">&times;</span>
-    <img id="modalImg" src="" class="max-w-full max-h-full rounded shadow-lg" />
+    <iframe id="modalImage" class="w-[92vw] h-[85vh] bg-white rounded shadow-lg border"></iframe>
   </div>
 
   <script>
+    // CSV publicado desde Google Sheets
     const SHEET_CSV_URL =
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
+
+    // Tu Apps Script (NO tocamos App Script; seguimos usando iframe)
     const SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbyANDCHFad-08b8mFaA6Wi3kP9mTbI-WIAM9_DFWHlseDQmAmcrBZnVVm8_3OuMOVz53w/exec";
 
+    // DOM refs
     const listView = document.getElementById("listView");
     const detailView = document.getElementById("detailView");
     const tableBody = document.getElementById("tableBody");
@@ -73,12 +79,11 @@
     const searchBox = document.getElementById("searchBox");
     const paginationDesktop = document.getElementById("paginationDesktop");
     const paginationMobile = document.getElementById("paginationMobile");
-
-    // Modal
     const imageModal = document.getElementById("imageModal");
-    const modalImg = document.getElementById("modalImg");
+    const modalImage = document.getElementById("modalImage");
     const closeModal = document.getElementById("closeModal");
 
+    // Estado
     let products = [];
     let filteredProducts = [];
     let currentPage = 1;
@@ -96,72 +101,12 @@
       },
     });
 
-    // Render tabla
-    function renderTable() {
-      tableBody.innerHTML = "";
-      const pageProducts = getPageProducts();
-
-      pageProducts.forEach((row, index) => {
-        const isLong = row.DESCRIPCION.length > 80;
-        const shortDesc = isLong 
-          ? row.DESCRIPCION.substring(0, 80) + `<span class="font-bold cursor-pointer" onclick="toggleDesc(${index})">...</span>` 
-          : row.DESCRIPCION;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="p-2 border text-center">${row.SKU}</td>
-          <td class="p-2 border text-center">${row.ESTILO}</td>
-          <td class="p-2 border">${shortDesc}</td>
-          <td class="p-2 border text-center">
-            <button onclick="showDetail('${row.SKU}')" 
-              class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">
-              Ver detalles
-            </button>
-          </td>
-        `;
-        tableBody.appendChild(tr);
-      });
-
-      renderPagination(paginationDesktop);
-    }
-
-    // Render cards móvil
-    function renderCards() {
-      cardsContainer.innerHTML = "";
-      const pageProducts = getPageProducts();
-
-      pageProducts.forEach((row) => {
-        const isLong = row.DESCRIPCION.length > 60;
-        const shortDesc = isLong 
-          ? row.DESCRIPCION.substring(0, 60) + `<span class="font-bold cursor-pointer">...</span>` 
-          : row.DESCRIPCION;
-
-        const card = document.createElement("div");
-        card.className = "p-4 bg-white shadow rounded border";
-        card.innerHTML = `
-          <h3 class="text-lg font-semibold mb-1">${row.SKU} - ${row.ESTILO}</h3>
-          <p class="text-sm mb-2">${shortDesc}</p>
-          <button onclick="showDetail('${row.SKU}')" 
-            class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200 text-sm">
-            Ver detalles
-          </button>
-        `;
-        cardsContainer.appendChild(card);
-      });
-
-      renderPagination(paginationMobile);
-    }
-
-    // Productos de página
-    function getPageProducts() {
-      const start = (currentPage - 1) * itemsPerPage;
-      return filteredProducts.slice(start, start + itemsPerPage);
-    }
+    // Util
+    const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
 
     // Filtro estilos
     function renderFilterOptions() {
-      const estilos = [...new Set(products.map(p => p.ESTILO).filter(Boolean))];
-      estilos.sort();
+      const estilos = [...new Set(products.map(p => p.ESTILO).filter(Boolean))].sort();
       estilos.forEach(estilo => {
         const option = document.createElement("option");
         option.value = estilo;
@@ -169,103 +114,191 @@
         filterEstilo.appendChild(option);
       });
     }
+
+    // Eventos filtro + búsqueda
     filterEstilo.addEventListener("change", applyFilters);
     searchBox.addEventListener("input", applyFilters);
 
     function applyFilters() {
       const estilo = filterEstilo.value.toLowerCase();
       const search = searchBox.value.toLowerCase();
-
       filteredProducts = products.filter(p => {
         const matchEstilo = !estilo || (p.ESTILO && p.ESTILO.toLowerCase() === estilo);
-        const matchSearch = !search || 
+        const matchSearch = !search ||
           (p.SKU && p.SKU.toLowerCase().includes(search)) ||
           (p.ESTILO && p.ESTILO.toLowerCase().includes(search)) ||
           (p.DESCRIPCION && p.DESCRIPCION.toLowerCase().includes(search));
         return matchEstilo && matchSearch;
       });
-
       currentPage = 1;
       renderTable();
       renderCards();
     }
 
-    // Vista detalle con imágenes altas + modal
-    function showDetail(sku) {
-      const product = products.find((p) => p.SKU === sku);
-      if (!product) return;
-
-      listView.classList.add("hidden");
-      detailView.classList.remove("hidden");
-
-      detailCard.innerHTML = `
-        <h2 class="text-xl font-bold mb-2">${product.SKU} - ${product.ESTILO}</h2>
-        <p class="mb-2">${product.DESCRIPCION}</p>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          ${[product.Imagen1, product.Imagen2, product.Imagen3]
-            .map((url) =>
-                url
-                ? `<img src="${driveToDirect(url)}" 
-                        class="w-full h-64 object-cover rounded border cursor-pointer" 
-                        onclick="openModal('${driveToDirect(url)}')" />`
-                : `<div class="w-full h-64 flex items-center justify-center border bg-gray-100 text-gray-500 rounded">Imagen no disponible</div>`
-            )
-            .join("")}
-        </div>
-      `;
+    // Paginación helper
+    function getPageProducts() {
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      return { slice: filteredProducts.slice(start, end), startIndex: start };
     }
 
-    backBtn.addEventListener("click", () => {
-      detailView.classList.add("hidden");
-      listView.classList.remove("hidden");
-    });
+    // Tabla (desktop) con "..." clicable
+    function renderTable() {
+      tableBody.innerHTML = "";
+      const { slice, startIndex } = getPageProducts();
+      slice.forEach((row, i) => {
+        const global = startIndex + i;
+        const isLong = (row.DESCRIPCION || "").length > 80;
+        const shortDesc = isLong
+          ? `${row.DESCRIPCION.substring(0, 80)} <b class="cursor-pointer" onclick="toggleDesc(${global}, false)">...</b>`
+          : row.DESCRIPCION || "";
 
-    // Modal abrir/cerrar
-    function openModal(src) {
-      modalImg.src = src;
-      imageModal.classList.remove("hidden");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="p-2 border text-center">${row.SKU}</td>
+          <td class="p-2 border text-center">${row.ESTILO || ""}</td>
+          <td class="p-2 border text-left">
+            <span id="d-short-${global}">${shortDesc}</span>
+            <span id="d-full-${global}" class="hidden cursor-pointer" onclick="toggleDesc(${global}, false)">${row.DESCRIPCION || ""}</span>
+          </td>
+          <td class="p-2 border text-center">
+            <button onclick="showDetail('${row.SKU}')" class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">
+              Ver detalles
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+      renderPagination(paginationDesktop);
     }
-    closeModal.addEventListener("click", () => {
-      imageModal.classList.add("hidden");
-    });
-    imageModal.addEventListener("click", (e) => {
-      if (e.target === imageModal) {
-        imageModal.classList.add("hidden");
-      }
-    });
 
-    // Drive → Apps Script
-    function driveToDirect(url) {
-      if (!url) return "";
-      const match = url.match(/[-\w]{25,}/);
-      const id = match ? match[0] : url;
-      return `${SCRIPT_URL}?id=${id}`;
+    // Cards (móvil) con "..." clicable
+    function renderCards() {
+      cardsContainer.innerHTML = "";
+      const { slice, startIndex } = getPageProducts();
+      slice.forEach((row, i) => {
+        const global = startIndex + i;
+        const isLong = (row.DESCRIPCION || "").length > 60;
+        const shortDesc = isLong
+          ? `${row.DESCRIPCION.substring(0, 60)} <b class="cursor-pointer" onclick="toggleDesc(${global}, true)">...</b>`
+          : row.DESCRIPCION || "";
+
+        const card = document.createElement("div");
+        card.className = "p-4 bg-white shadow rounded border";
+        card.innerHTML = `
+          <h3 class="text-lg font-semibold mb-1">${row.SKU} - ${row.ESTILO || ""}</h3>
+          <p class="text-sm mb-2">
+            <span id="m-short-${global}">${shortDesc}</span>
+            <span id="m-full-${global}" class="hidden cursor-pointer" onclick="toggleDesc(${global}, true)">${row.DESCRIPCION || ""}</span>
+          </p>
+          <button onclick="showDetail('${row.SKU}')" class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200 text-sm">
+            Ver detalles
+          </button>
+        `;
+        cardsContainer.appendChild(card);
+      });
+      renderPagination(paginationMobile);
     }
 
-    // Paginación
+    // Toggle "..." ↔ texto completo
+    window.toggleDesc = function(global, isMobileView) {
+      const sId = `${isMobileView ? "m" : "d"}-short-${global}`;
+      const fId = `${isMobileView ? "m" : "d"}-full-${global}`;
+      const s = document.getElementById(sId);
+      const f = document.getElementById(fId);
+      if (!s || !f) return;
+      s.classList.toggle("hidden");
+      f.classList.toggle("hidden");
+    };
+
+    // Paginación (se usa en desktop y móvil)
     function renderPagination(container) {
       const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
       container.innerHTML = "";
       if (totalPages <= 1) return;
 
-      const prevBtn = document.createElement("button");
-      prevBtn.textContent = "Anterior";
-      prevBtn.disabled = currentPage === 1;
-      prevBtn.className = "px-3 py-1 border rounded " + (prevBtn.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
-      prevBtn.onclick = () => { currentPage--; renderTable(); renderCards(); };
-      container.appendChild(prevBtn);
+      const prev = document.createElement("button");
+      prev.textContent = "Anterior";
+      prev.disabled = currentPage === 1;
+      prev.className = "px-3 py-1 border rounded " + (prev.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
+      prev.onclick = () => { currentPage--; renderTable(); renderCards(); };
+      container.appendChild(prev);
 
-      const pageInfo = document.createElement("span");
-      pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-      pageInfo.className = "px-3";
-      container.appendChild(pageInfo);
+      const info = document.createElement("span");
+      info.textContent = `Página ${currentPage} de ${totalPages}`;
+      info.className = "px-3";
+      container.appendChild(info);
 
-      const nextBtn = document.createElement("button");
-      nextBtn.textContent = "Siguiente";
-      nextBtn.disabled = currentPage === totalPages;
-      nextBtn.className = "px-3 py-1 border rounded " + (nextBtn.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
-      nextBtn.onclick = () => { currentPage++; renderTable(); renderCards(); };
-      container.appendChild(nextBtn);
+      const next = document.createElement("button");
+      next.textContent = "Siguiente";
+      next.disabled = currentPage === totalPages;
+      next.className = "px-3 py-1 border rounded " + (next.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
+      next.onclick = () => { currentPage++; renderTable(); renderCards(); };
+      container.appendChild(next);
+    }
+
+    // Detalle (imágenes altas y modal solo en móvil)
+    window.showDetail = function(sku) {
+      const product = products.find(p => p.SKU === sku);
+      if (!product) return;
+
+      listView.classList.add("hidden");
+      document.getElementById("controls").classList.add("hidden"); // ocultar filtros en detalle
+      detailView.classList.remove("hidden");
+
+      const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
+
+      detailCard.innerHTML = `
+        <h2 class="text-xl font-bold mb-2">${product.SKU} - ${product.ESTILO || ""}</h2>
+        <p class="mb-4">${product.DESCRIPCION || ""}</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          ${
+            imgs.length
+            ? imgs.map(url => `
+                <div class="relative">
+                  <iframe 
+                    src="${driveToDirect(url)}"
+                    class="w-full h-80 border rounded ${isMobile() ? 'cursor-pointer' : ''}"
+                    ${isMobile() ? `onclick="openModal('${url}')"` : ""}
+                  ></iframe>
+                </div>
+              `).join("")
+            : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">Imagen no disponible</div>`
+          }
+        </div>
+      `;
+    };
+
+    backBtn.addEventListener("click", () => {
+      detailView.classList.add("hidden");
+      document.getElementById("controls").classList.remove("hidden");
+      listView.classList.remove("hidden");
+    });
+
+    // Modal (solo abrimos en móvil)
+    window.openModal = function(url) {
+      if (!isMobile()) return; // solo móvil
+      modalImage.src = driveToDirect(url);
+      imageModal.classList.remove("hidden");
+    };
+    closeModal.addEventListener("click", () => {
+      imageModal.classList.add("hidden");
+      modalImage.src = "";
+    });
+    imageModal.addEventListener("click", (e) => {
+      if (e.target === imageModal) {
+        imageModal.classList.add("hidden");
+        modalImage.src = "";
+      }
+    });
+
+    // Drive → tu Apps Script (queda igual)
+    function driveToDirect(url) {
+      if (!url) return "";
+      const match = url.match(/[-\w]{25,}/);
+      const id = match ? match[0] : url;
+      return `${SCRIPT_URL}?id=${id}`;
     }
   </script>
 </body>
