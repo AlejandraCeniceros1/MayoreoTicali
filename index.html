@@ -43,11 +43,9 @@
   </main>
 
   <script>
-    // 📌 CSV publicado desde Google Sheets
     const SHEET_CSV_URL =
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
 
-    // 📌 Tu Apps Script URL
     const SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbyANDCHFad-08b8mFaA6Wi3kP9mTbI-WIAM9_DFWHlseDQmAmcrBZnVVm8_3OuMOVz53w/exec";
 
@@ -61,27 +59,38 @@
     let products = [];
     let filteredProducts = [];
 
-    // 📥 Leer el CSV desde Sheets
     Papa.parse(SHEET_CSV_URL, {
       download: true,
       header: true,
       complete: function (results) {
-        products = results.data.filter(row => row.SKU); // limpio vacíos
+        products = results.data.filter(row => row.SKU);
         filteredProducts = [...products];
         renderFilterOptions();
         renderTable();
       },
     });
 
-    // 📋 Renderizar tabla
     function renderTable() {
       tableBody.innerHTML = "";
-      filteredProducts.forEach((row) => {
+      filteredProducts.forEach((row, index) => {
+        const shortDesc = row.DESCRIPCION.length > 80 
+          ? row.DESCRIPCION.substring(0, 80) + "…" 
+          : row.DESCRIPCION;
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="p-2 border">${row.SKU}</td>
           <td class="p-2 border">${row.ESTILO}</td>
-          <td class="p-2 border">${row.DESCRIPCION}</td>
+          <td class="p-2 border">
+            <span id="desc-short-${index}">${shortDesc}</span>
+            <span id="desc-full-${index}" class="hidden">${row.DESCRIPCION}</span>
+            ${row.DESCRIPCION.length > 80 
+              ? `<button onclick="toggleDesc(${index})" 
+                    class="text-blue-600 text-xs ml-2 hover:underline">
+                    Ver más
+                 </button>` 
+              : ""}
+          </td>
           <td class="p-2 border">
             <button onclick="showDetail('${row.SKU}')" 
               class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">
@@ -93,7 +102,6 @@
       });
     }
 
-    // 🔎 Renderizar filtro de estilos
     function renderFilterOptions() {
       const estilos = [...new Set(products.map(p => p.ESTILO).filter(Boolean))];
       estilos.sort();
@@ -105,7 +113,6 @@
       });
     }
 
-    // 🎛 Aplicar filtro al cambiar selección
     filterEstilo.addEventListener("change", () => {
       const value = filterEstilo.value;
       filteredProducts = value
@@ -114,7 +121,6 @@
       renderTable();
     });
 
-    // 🔎 Vista de detalle
     function showDetail(sku) {
       const product = products.find((p) => p.SKU === sku);
       if (!product) return;
@@ -142,12 +148,28 @@
       listView.classList.remove("hidden");
     });
 
-    // 🔗 Convierte links de Drive a URLs de tu Apps Script
     function driveToDirect(url) {
-        if (!url) return "";
-        const match = url.match(/[-\w]{25,}/);
-        const id = match ? match[0] : url;
-        return `${SCRIPT_URL}?id=${id}`;
+      if (!url) return "";
+      const match = url.match(/[-\w]{25,}/);
+      const id = match ? match[0] : url;
+      return `${SCRIPT_URL}?id=${id}`;
+    }
+
+    // 👉 Función para expandir/colapsar descripciones
+    function toggleDesc(index) {
+      const shortEl = document.getElementById(`desc-short-${index}`);
+      const fullEl = document.getElementById(`desc-full-${index}`);
+      const btn = shortEl.nextElementSibling.nextElementSibling;
+
+      if (fullEl.classList.contains("hidden")) {
+        shortEl.classList.add("hidden");
+        fullEl.classList.remove("hidden");
+        btn.textContent = "Ver menos";
+      } else {
+        shortEl.classList.remove("hidden");
+        fullEl.classList.add("hidden");
+        btn.textContent = "Ver más";
+      }
     }
   </script>
 </body>
