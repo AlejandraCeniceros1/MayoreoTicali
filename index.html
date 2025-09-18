@@ -12,6 +12,14 @@
   <main class="max-w-6xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-4">Catálogo TiCali Mayoreo</h1>
 
+    <!-- 🔎 Filtro -->
+    <div class="mb-4 flex items-center gap-2">
+      <label for="filterEstilo" class="font-medium">Filtrar por estilo:</label>
+      <select id="filterEstilo" class="border rounded px-2 py-1">
+        <option value="">Todos</option>
+      </select>
+    </div>
+
     <!-- 📋 Tabla de productos -->
     <section id="listView">
       <table class="min-w-full border text-sm bg-white shadow rounded">
@@ -39,7 +47,7 @@
     const SHEET_CSV_URL =
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
 
-    // 📌 URL de tu Apps Script (la nueva que me diste)
+    // 📌 Tu Apps Script URL
     const SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbyANDCHFad-08b8mFaA6Wi3kP9mTbI-WIAM9_DFWHlseDQmAmcrBZnVVm8_3OuMOVz53w/exec";
 
@@ -48,15 +56,19 @@
     const tableBody = document.getElementById("tableBody");
     const detailCard = document.getElementById("detailCard");
     const backBtn = document.getElementById("backBtn");
+    const filterEstilo = document.getElementById("filterEstilo");
 
     let products = [];
+    let filteredProducts = [];
 
     // 📥 Leer el CSV desde Sheets
     Papa.parse(SHEET_CSV_URL, {
       download: true,
       header: true,
       complete: function (results) {
-        products = results.data;
+        products = results.data.filter(row => row.SKU); // limpio vacíos
+        filteredProducts = [...products];
+        renderFilterOptions();
         renderTable();
       },
     });
@@ -64,8 +76,7 @@
     // 📋 Renderizar tabla
     function renderTable() {
       tableBody.innerHTML = "";
-      products.forEach((row) => {
-        if (!row.SKU) return;
+      filteredProducts.forEach((row) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="p-2 border">${row.SKU}</td>
@@ -81,6 +92,27 @@
         tableBody.appendChild(tr);
       });
     }
+
+    // 🔎 Renderizar filtro de estilos
+    function renderFilterOptions() {
+      const estilos = [...new Set(products.map(p => p.ESTILO).filter(Boolean))];
+      estilos.sort();
+      estilos.forEach(estilo => {
+        const option = document.createElement("option");
+        option.value = estilo;
+        option.textContent = estilo;
+        filterEstilo.appendChild(option);
+      });
+    }
+
+    // 🎛 Aplicar filtro al cambiar selección
+    filterEstilo.addEventListener("change", () => {
+      const value = filterEstilo.value;
+      filteredProducts = value
+        ? products.filter(p => p.ESTILO === value)
+        : [...products];
+      renderTable();
+    });
 
     // 🔎 Vista de detalle
     function showDetail(sku) {
