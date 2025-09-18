@@ -39,9 +39,9 @@
     const SHEET_CSV_URL =
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
 
-    // 📌 Tu Apps Script publicado como WebApp
+    // 📌 URL de tu Apps Script (la nueva que me diste)
     const SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbzI4LDcnF66w7JICggZnxxB6Iny21kGCJ8svqYrMqDcX8bcemPaZ407zilphdTzNswGbA/exec";
+      "https://script.google.com/macros/s/AKfycbyANDCHFad-08b8mFaA6Wi3kP9mTbI-WIAM9_DFWHlseDQmAmcrBZnVVm8_3OuMOVz53w/exec";
 
     const listView = document.getElementById("listView");
     const detailView = document.getElementById("detailView");
@@ -96,13 +96,11 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           ${[product.Imagen1, product.Imagen2, product.Imagen3]
             .map((url) =>
-            url
+                url
                 ? `<iframe src="${driveToDirect(url)}" class="w-full h-48 border rounded"></iframe>`
                 : `<div class="w-full h-48 flex items-center justify-center border bg-gray-100 text-gray-500 rounded">Imagen no disponible</div>`
             )
-
             .join("")}
-
         </div>
       `;
     }
@@ -117,10 +115,8 @@
         if (!url) return "";
         const match = url.match(/[-\w]{25,}/);
         const id = match ? match[0] : url;
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwg3NOXJLAQD5BIlIFXxsK2Ry9xWWcR9WUFk5qJKW3-Mspc7boSiZey1dBlRd9eYuXa3w/exec"; // pega aquí la URL de paso 3
         return `${SCRIPT_URL}?id=${id}`;
     }
-
   </script>
 </body>
 </html>
