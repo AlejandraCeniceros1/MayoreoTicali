@@ -90,10 +90,11 @@
         <p class="mb-2">${product.DESCRIPCION}</p>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             ${[product.Imagen1, product.Imagen2, product.Imagen3].map(url => 
-            url ? `<iframe src="${driveToDirect(url)}" class="w-full h-48 border rounded"></iframe>` : ""
+            url ? `<img src="${driveToDirect(url)}" class="w-full h-48 object-cover rounded border"/>` : ""
             ).join("")}
         </div>
         `;
+
 
     }
 
