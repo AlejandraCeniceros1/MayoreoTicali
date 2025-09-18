@@ -10,19 +10,20 @@
 <body class="bg-stone-50 text-stone-800">
 
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-    <h1 class="text-2xl font-bold mb-4 text-center">Catálogo TiCali Mayoreo</h1>
+    <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</h1>
 
     <!-- 📋 LIST VIEW -->
     <section id="listView">
-      <!-- 🔎 Filtro -->
       <div class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
-        <label for="filterEstilo" class="font-medium">Filtrar por estilo:</label>
+        <label for="filterEstilo" class="font-medium">Estilo:</label>
         <select id="filterEstilo" class="border rounded px-3 py-2 w-full sm:w-auto">
           <option value="">Todos</option>
         </select>
+        <input id="searchBox" type="text" placeholder="Buscar..." 
+          class="border rounded px-3 py-2 w-full sm:w-64" />
       </div>
 
-      <!-- 📋 Tabla desktop -->
+      <!-- Tabla desktop -->
       <div class="hidden sm:block">
         <table class="min-w-full border text-sm bg-white shadow rounded overflow-hidden">
           <thead class="bg-stone-200">
@@ -35,26 +36,30 @@
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
-
-        <!-- 📌 Paginación -->
-        <div id="pagination" class="flex justify-center items-center gap-2 mt-4"></div>
+        <div id="paginationDesktop" class="flex justify-center items-center gap-2 mt-4"></div>
       </div>
 
-      <!-- 📱 Cards móvil -->
+      <!-- Cards móvil -->
       <div id="cardsContainer" class="sm:hidden grid gap-4"></div>
+      <div id="paginationMobile" class="sm:hidden flex justify-center items-center gap-2 mt-4"></div>
     </section>
 
-    <!-- 🔎 DETAIL VIEW -->
+    <!-- DETAIL VIEW -->
     <section id="detailView" class="hidden">
       <button id="backBtn" class="my-4 px-3 py-2 border rounded bg-white shadow-sm">← Volver</button>
       <div id="detailCard" class="p-4 bg-white shadow rounded"></div>
     </section>
   </main>
 
+  <!-- Modal para ampliar imagen -->
+  <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+    <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl font-bold cursor-pointer">&times;</span>
+    <img id="modalImg" src="" class="max-w-full max-h-full rounded shadow-lg" />
+  </div>
+
   <script>
     const SHEET_CSV_URL =
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
-
     const SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbyANDCHFad-08b8mFaA6Wi3kP9mTbI-WIAM9_DFWHlseDQmAmcrBZnVVm8_3OuMOVz53w/exec";
 
@@ -65,7 +70,14 @@
     const detailCard = document.getElementById("detailCard");
     const backBtn = document.getElementById("backBtn");
     const filterEstilo = document.getElementById("filterEstilo");
-    const pagination = document.getElementById("pagination");
+    const searchBox = document.getElementById("searchBox");
+    const paginationDesktop = document.getElementById("paginationDesktop");
+    const paginationMobile = document.getElementById("paginationMobile");
+
+    // Modal
+    const imageModal = document.getElementById("imageModal");
+    const modalImg = document.getElementById("modalImg");
+    const closeModal = document.getElementById("closeModal");
 
     let products = [];
     let filteredProducts = [];
@@ -84,12 +96,10 @@
       },
     });
 
-    // 📋 Render tabla con paginación
+    // Render tabla
     function renderTable() {
       tableBody.innerHTML = "";
-      const start = (currentPage - 1) * itemsPerPage;
-      const end = start + itemsPerPage;
-      const pageProducts = filteredProducts.slice(start, end);
+      const pageProducts = getPageProducts();
 
       pageProducts.forEach((row, index) => {
         const isLong = row.DESCRIPCION.length > 80;
@@ -101,10 +111,7 @@
         tr.innerHTML = `
           <td class="p-2 border text-center">${row.SKU}</td>
           <td class="p-2 border text-center">${row.ESTILO}</td>
-          <td class="p-2 border">
-            <span id="desc-short-${index}">${shortDesc}</span>
-            <span id="desc-full-${index}" class="hidden cursor-pointer" onclick="toggleDesc(${index})">${row.DESCRIPCION}</span>
-          </td>
+          <td class="p-2 border">${shortDesc}</td>
           <td class="p-2 border text-center">
             <button onclick="showDetail('${row.SKU}')" 
               class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">
@@ -115,26 +122,25 @@
         tableBody.appendChild(tr);
       });
 
-      renderPagination();
+      renderPagination(paginationDesktop);
     }
 
-    // 📱 Render cards móvil
+    // Render cards móvil
     function renderCards() {
       cardsContainer.innerHTML = "";
-      filteredProducts.forEach((row, index) => {
+      const pageProducts = getPageProducts();
+
+      pageProducts.forEach((row) => {
         const isLong = row.DESCRIPCION.length > 60;
         const shortDesc = isLong 
-          ? row.DESCRIPCION.substring(0, 60) + `<span class="font-bold cursor-pointer" onclick="toggleDesc(${index}, true)">...</span>` 
+          ? row.DESCRIPCION.substring(0, 60) + `<span class="font-bold cursor-pointer">...</span>` 
           : row.DESCRIPCION;
 
         const card = document.createElement("div");
         card.className = "p-4 bg-white shadow rounded border";
         card.innerHTML = `
           <h3 class="text-lg font-semibold mb-1">${row.SKU} - ${row.ESTILO}</h3>
-          <p class="text-sm mb-2">
-            <span id="desc-short-m-${index}">${shortDesc}</span>
-            <span id="desc-full-m-${index}" class="hidden cursor-pointer" onclick="toggleDesc(${index}, true)">${row.DESCRIPCION}</span>
-          </p>
+          <p class="text-sm mb-2">${shortDesc}</p>
           <button onclick="showDetail('${row.SKU}')" 
             class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200 text-sm">
             Ver detalles
@@ -142,9 +148,17 @@
         `;
         cardsContainer.appendChild(card);
       });
+
+      renderPagination(paginationMobile);
     }
 
-    // 🔎 Render opciones de filtro
+    // Productos de página
+    function getPageProducts() {
+      const start = (currentPage - 1) * itemsPerPage;
+      return filteredProducts.slice(start, start + itemsPerPage);
+    }
+
+    // Filtro estilos
     function renderFilterOptions() {
       const estilos = [...new Set(products.map(p => p.ESTILO).filter(Boolean))];
       estilos.sort();
@@ -155,19 +169,28 @@
         filterEstilo.appendChild(option);
       });
     }
+    filterEstilo.addEventListener("change", applyFilters);
+    searchBox.addEventListener("input", applyFilters);
 
-    // 🎛 Evento de filtro
-    filterEstilo.addEventListener("change", () => {
-      const value = filterEstilo.value;
-      filteredProducts = value
-        ? products.filter(p => p.ESTILO === value)
-        : [...products];
+    function applyFilters() {
+      const estilo = filterEstilo.value.toLowerCase();
+      const search = searchBox.value.toLowerCase();
+
+      filteredProducts = products.filter(p => {
+        const matchEstilo = !estilo || (p.ESTILO && p.ESTILO.toLowerCase() === estilo);
+        const matchSearch = !search || 
+          (p.SKU && p.SKU.toLowerCase().includes(search)) ||
+          (p.ESTILO && p.ESTILO.toLowerCase().includes(search)) ||
+          (p.DESCRIPCION && p.DESCRIPCION.toLowerCase().includes(search));
+        return matchEstilo && matchSearch;
+      });
+
       currentPage = 1;
       renderTable();
       renderCards();
-    });
+    }
 
-    // 🔎 Vista detalle
+    // Vista detalle con imágenes altas + modal
     function showDetail(sku) {
       const product = products.find((p) => p.SKU === sku);
       if (!product) return;
@@ -182,8 +205,10 @@
           ${[product.Imagen1, product.Imagen2, product.Imagen3]
             .map((url) =>
                 url
-                ? `<iframe src="${driveToDirect(url)}" class="w-full h-48 border rounded"></iframe>`
-                : `<div class="w-full h-48 flex items-center justify-center border bg-gray-100 text-gray-500 rounded">Imagen no disponible</div>`
+                ? `<img src="${driveToDirect(url)}" 
+                        class="w-full h-64 object-cover rounded border cursor-pointer" 
+                        onclick="openModal('${driveToDirect(url)}')" />`
+                : `<div class="w-full h-64 flex items-center justify-center border bg-gray-100 text-gray-500 rounded">Imagen no disponible</div>`
             )
             .join("")}
         </div>
@@ -195,7 +220,21 @@
       listView.classList.remove("hidden");
     });
 
-    // 🔗 Convierte link de Drive a URL de tu Apps Script
+    // Modal abrir/cerrar
+    function openModal(src) {
+      modalImg.src = src;
+      imageModal.classList.remove("hidden");
+    }
+    closeModal.addEventListener("click", () => {
+      imageModal.classList.add("hidden");
+    });
+    imageModal.addEventListener("click", (e) => {
+      if (e.target === imageModal) {
+        imageModal.classList.add("hidden");
+      }
+    });
+
+    // Drive → Apps Script
     function driveToDirect(url) {
       if (!url) return "";
       const match = url.match(/[-\w]{25,}/);
@@ -203,45 +242,30 @@
       return `${SCRIPT_URL}?id=${id}`;
     }
 
-    // 🔀 Toggle descripción
-    function toggleDesc(index, mobile = false) {
-      const shortEl = document.getElementById(`desc-short-${mobile ? "m-" : ""}${index}`);
-      const fullEl = document.getElementById(`desc-full-${mobile ? "m-" : ""}${index}`);
-      shortEl.classList.toggle("hidden");
-      fullEl.classList.toggle("hidden");
-    }
-
-    // 📌 Render paginación
-    function renderPagination() {
+    // Paginación
+    function renderPagination(container) {
       const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-      pagination.innerHTML = "";
-
+      container.innerHTML = "";
       if (totalPages <= 1) return;
 
       const prevBtn = document.createElement("button");
       prevBtn.textContent = "Anterior";
       prevBtn.disabled = currentPage === 1;
       prevBtn.className = "px-3 py-1 border rounded " + (prevBtn.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
-      prevBtn.onclick = () => {
-        currentPage--;
-        renderTable();
-      };
-      pagination.appendChild(prevBtn);
+      prevBtn.onclick = () => { currentPage--; renderTable(); renderCards(); };
+      container.appendChild(prevBtn);
 
       const pageInfo = document.createElement("span");
       pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
       pageInfo.className = "px-3";
-      pagination.appendChild(pageInfo);
+      container.appendChild(pageInfo);
 
       const nextBtn = document.createElement("button");
       nextBtn.textContent = "Siguiente";
       nextBtn.disabled = currentPage === totalPages;
       nextBtn.className = "px-3 py-1 border rounded " + (nextBtn.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
-      nextBtn.onclick = () => {
-        currentPage++;
-        renderTable();
-      };
-      pagination.appendChild(nextBtn);
+      nextBtn.onclick = () => { currentPage++; renderTable(); renderCards(); };
+      container.appendChild(nextBtn);
     }
   </script>
 </body>
