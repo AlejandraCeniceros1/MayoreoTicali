@@ -35,7 +35,11 @@
   </main>
 
   <script>
+    // CSV publicado desde Google Sheets
     const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
+
+    // URL real de tu Apps Script (cambia esta por la tuya)
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTU_URL_REAL/exec";
 
     const listView = document.getElementById("listView");
     const detailView = document.getElementById("detailView");
@@ -64,7 +68,10 @@
           <td class="p-2 border">${row.ESTILO}</td>
           <td class="p-2 border">${row.DESCRIPCION}</td>
           <td class="p-2 border">
-            <button onclick="showDetail('${row.SKU}')" class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">Ver detalles</button>
+            <button onclick="showDetail('${row.SKU}')" 
+              class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">
+              Ver detalles
+            </button>
           </td>
         `;
         tableBody.appendChild(tr);
@@ -83,7 +90,8 @@
         <p class="mb-2">${product.DESCRIPCION}</p>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           ${[product.Imagen1, product.Imagen2, product.Imagen3].map(url => 
-            url ? `<img src="${driveToDirect(url)}" class="w-full h-48 object-cover rounded border" />` : ""
+            url ? `<img src="${driveToDirect(url)}" 
+                      class="w-full h-48 object-cover rounded border" />` : ""
           ).join("")}
         </div>
       `;
@@ -94,16 +102,13 @@
       listView.classList.remove("hidden");
     });
 
-    // Función para convertir links de Drive en links directos de imagen
+    // Función que convierte un link de Drive o un ID en URL válida vía Apps Script
     function driveToDirect(url) {
-        if (!url) return "";
-        const match = url.match(/[-\w]{25,}/);
-        const id = match ? match[0] : url;
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxEjemplo12345/exec"; // tu URL real
-        return `${SCRIPT_URL}?id=${id}`;
+      if (!url) return "";
+      const match = url.match(/[-\w]{25,}/); // extraer ID
+      const id = match ? match[0] : url;
+      return `${SCRIPT_URL}?id=${id}`;
     }
-
-
   </script>
 </body>
 </html>
