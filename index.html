@@ -1,12 +1,107 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TiCali Mayoreo</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catálogo TiCali Mayoreo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
-<body>
-  <h1>Hola TiCali 👖</h1>
-  <p>Prueba de GitHub Pages funcionando.</p>
+<body class="bg-stone-50 text-stone-800">
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold mb-4">Catálogo TiCali Mayoreo</h1>
+
+    <!-- Tabla de productos -->
+    <section id="listView">
+      <table class="min-w-full border text-sm bg-white shadow rounded">
+        <thead class="bg-stone-200">
+          <tr>
+            <th class="p-2 border">SKU</th>
+            <th class="p-2 border">Estilo</th>
+            <th class="p-2 border">Descripción</th>
+            <th class="p-2 border">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </section>
+
+    <!-- Vista de detalle -->
+    <section id="detailView" class="hidden">
+      <button id="backBtn" class="my-4 px-3 py-1 border rounded bg-white">← Volver</button>
+      <div id="detailCard" class="p-4 bg-white shadow rounded"></div>
+    </section>
+  </main>
+
+  <script>
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
+
+    const listView = document.getElementById("listView");
+    const detailView = document.getElementById("detailView");
+    const tableBody = document.getElementById("tableBody");
+    const detailCard = document.getElementById("detailCard");
+    const backBtn = document.getElementById("backBtn");
+
+    let products = [];
+
+    Papa.parse(SHEET_CSV_URL, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        products = results.data;
+        renderTable();
+      }
+    });
+
+    function renderTable() {
+      tableBody.innerHTML = "";
+      products.forEach(row => {
+        if (!row.SKU) return;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="p-2 border">${row.SKU}</td>
+          <td class="p-2 border">${row.ESTILO}</td>
+          <td class="p-2 border">${row.DESCRIPCION}</td>
+          <td class="p-2 border">
+            <button onclick="showDetail('${row.SKU}')" class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">Ver detalles</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function showDetail(sku) {
+      const product = products.find(p => p.SKU === sku);
+      if (!product) return;
+
+      listView.classList.add("hidden");
+      detailView.classList.remove("hidden");
+
+      detailCard.innerHTML = `
+        <h2 class="text-xl font-bold mb-2">${product.SKU} - ${product.ESTILO}</h2>
+        <p class="mb-2">${product.DESCRIPCION}</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          ${[product.Imagen1, product.Imagen2, product.Imagen3].map(url => 
+            url ? `<img src="${driveToDirect(url)}" class="w-full h-48 object-cover rounded border" />` : ""
+          ).join("")}
+        </div>
+      `;
+    }
+
+    backBtn.addEventListener("click", () => {
+      detailView.classList.add("hidden");
+      listView.classList.remove("hidden");
+    });
+
+    // Función para convertir links de Drive en links directos de imagen
+    function driveToDirect(url) {
+      try {
+        const match = url.match(/[-\w]{25,}/);
+        return match ? `https://drive.google.com/uc?export=view&id=${match[0]}` : url;
+      } catch (e) {
+        return url;
+      }
+    }
+  </script>
 </body>
 </html>
