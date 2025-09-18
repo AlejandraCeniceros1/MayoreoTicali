@@ -97,8 +97,11 @@
     function driveToDirect(url) {
     try {
         if (!url) return "";
+        // Quitar espacios y saltos de línea
+        url = url.trim();
         // Quitar parámetros extra tipo ?usp=...
         url = url.split("?")[0];
+        // Extraer ID
         const match = url.match(/[-\w]{25,}/);
         const direct = match ? `https://drive.google.com/uc?export=view&id=${match[0]}` : url;
         console.log("URL original:", url);
@@ -109,6 +112,7 @@
         return url;
     }
     }
+
 
   </script>
 </body>
