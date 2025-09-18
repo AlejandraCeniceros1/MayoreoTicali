@@ -95,15 +95,13 @@
     });
 
     // Función para convertir links de Drive en links directos de imagen
-    function driveViaScript(url) {
-  if (!url) return "";
-  // Extraer solo el ID de un link completo de Drive
-  const match = url.match(/[-\w]{25,}/);
-  const id = match ? match[0] : url;
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxEjemplo12345/exec"; // tu URL real
-  return `${SCRIPT_URL}?id=${id}`;
-}
-
+    function driveToDirect(url) {
+        if (!url) return "";
+        const match = url.match(/[-\w]{25,}/);
+        const id = match ? match[0] : url;
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxEjemplo12345/exec"; // tu URL real
+        return `${SCRIPT_URL}?id=${id}`;
+    }
 
 
   </script>
