@@ -95,13 +95,18 @@
 
     // Función para convertir links de Drive en links directos de imagen
     function driveToDirect(url) {
-      try {
-        const match = url.match(/[-\w]{25,}/);
-        return match ? `https://drive.google.com/uc?export=view&id=${match[0]}` : url;
-      } catch (e) {
-        return url;
-      }
-    }
+  try {
+    const match = url.match(/[-\w]{25,}/);
+    const direct = match ? `https://drive.google.com/uc?export=view&id=${match[0]}` : url;
+    console.log("URL original:", url);
+    console.log("URL directa:", direct);
+    return direct;
+  } catch (e) {
+    console.error("Error convirtiendo URL:", url, e);
+    return url;
+  }
+}
+
   </script>
 </body>
 </html>
