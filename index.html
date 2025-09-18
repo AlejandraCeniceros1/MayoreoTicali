@@ -9,35 +9,44 @@
 </head>
 <body class="bg-stone-50 text-stone-800">
 
-  <main class="max-w-6xl mx-auto px-4 py-6">
-    <h1 class="text-2xl font-bold mb-4">Catálogo TiCali Mayoreo</h1>
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">Catálogo TiCali Mayoreo</h1>
 
-    <!-- 🔎 Filtro -->
-    <div class="mb-4 flex items-center gap-2">
-      <label for="filterEstilo" class="font-medium">Filtrar por estilo:</label>
-      <select id="filterEstilo" class="border rounded px-2 py-1">
-        <option value="">Todos</option>
-      </select>
-    </div>
-
-    <!-- 📋 Tabla de productos -->
+    <!-- 📋 LIST VIEW -->
     <section id="listView">
-      <table class="min-w-full border text-sm bg-white shadow rounded">
-        <thead class="bg-stone-200">
-          <tr>
-            <th class="p-2 border">SKU</th>
-            <th class="p-2 border">Estilo</th>
-            <th class="p-2 border">Descripción</th>
-            <th class="p-2 border">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
+      <!-- 🔎 Filtro -->
+      <div class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
+        <label for="filterEstilo" class="font-medium">Filtrar por estilo:</label>
+        <select id="filterEstilo" class="border rounded px-3 py-2 w-full sm:w-auto">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <!-- 📋 Tabla desktop -->
+      <div class="hidden sm:block">
+        <table class="min-w-full border text-sm bg-white shadow rounded overflow-hidden">
+          <thead class="bg-stone-200">
+            <tr>
+              <th class="p-2 border text-center">SKU</th>
+              <th class="p-2 border text-center">Estilo</th>
+              <th class="p-2 border text-center">Descripción</th>
+              <th class="p-2 border text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+
+        <!-- 📌 Paginación -->
+        <div id="pagination" class="flex justify-center items-center gap-2 mt-4"></div>
+      </div>
+
+      <!-- 📱 Cards móvil -->
+      <div id="cardsContainer" class="sm:hidden grid gap-4"></div>
     </section>
 
-    <!-- 🔎 Vista de detalle -->
+    <!-- 🔎 DETAIL VIEW -->
     <section id="detailView" class="hidden">
-      <button id="backBtn" class="my-4 px-3 py-1 border rounded bg-white">← Volver</button>
+      <button id="backBtn" class="my-4 px-3 py-2 border rounded bg-white shadow-sm">← Volver</button>
       <div id="detailCard" class="p-4 bg-white shadow rounded"></div>
     </section>
   </main>
@@ -52,12 +61,16 @@
     const listView = document.getElementById("listView");
     const detailView = document.getElementById("detailView");
     const tableBody = document.getElementById("tableBody");
+    const cardsContainer = document.getElementById("cardsContainer");
     const detailCard = document.getElementById("detailCard");
     const backBtn = document.getElementById("backBtn");
     const filterEstilo = document.getElementById("filterEstilo");
+    const pagination = document.getElementById("pagination");
 
     let products = [];
     let filteredProducts = [];
+    let currentPage = 1;
+    const itemsPerPage = 15;
 
     Papa.parse(SHEET_CSV_URL, {
       download: true,
@@ -67,31 +80,32 @@
         filteredProducts = [...products];
         renderFilterOptions();
         renderTable();
+        renderCards();
       },
     });
 
+    // 📋 Render tabla con paginación
     function renderTable() {
       tableBody.innerHTML = "";
-      filteredProducts.forEach((row, index) => {
-        const shortDesc = row.DESCRIPCION.length > 80 
-          ? row.DESCRIPCION.substring(0, 80) + "…" 
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageProducts = filteredProducts.slice(start, end);
+
+      pageProducts.forEach((row, index) => {
+        const isLong = row.DESCRIPCION.length > 80;
+        const shortDesc = isLong 
+          ? row.DESCRIPCION.substring(0, 80) + `<span class="font-bold cursor-pointer" onclick="toggleDesc(${index})">...</span>` 
           : row.DESCRIPCION;
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td class="p-2 border">${row.SKU}</td>
-          <td class="p-2 border">${row.ESTILO}</td>
+          <td class="p-2 border text-center">${row.SKU}</td>
+          <td class="p-2 border text-center">${row.ESTILO}</td>
           <td class="p-2 border">
             <span id="desc-short-${index}">${shortDesc}</span>
-            <span id="desc-full-${index}" class="hidden">${row.DESCRIPCION}</span>
-            ${row.DESCRIPCION.length > 80 
-              ? `<button onclick="toggleDesc(${index})" 
-                    class="text-blue-600 text-xs ml-2 hover:underline">
-                    Ver más
-                 </button>` 
-              : ""}
+            <span id="desc-full-${index}" class="hidden cursor-pointer" onclick="toggleDesc(${index})">${row.DESCRIPCION}</span>
           </td>
-          <td class="p-2 border">
+          <td class="p-2 border text-center">
             <button onclick="showDetail('${row.SKU}')" 
               class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">
               Ver detalles
@@ -100,8 +114,37 @@
         `;
         tableBody.appendChild(tr);
       });
+
+      renderPagination();
     }
 
+    // 📱 Render cards móvil
+    function renderCards() {
+      cardsContainer.innerHTML = "";
+      filteredProducts.forEach((row, index) => {
+        const isLong = row.DESCRIPCION.length > 60;
+        const shortDesc = isLong 
+          ? row.DESCRIPCION.substring(0, 60) + `<span class="font-bold cursor-pointer" onclick="toggleDesc(${index}, true)">...</span>` 
+          : row.DESCRIPCION;
+
+        const card = document.createElement("div");
+        card.className = "p-4 bg-white shadow rounded border";
+        card.innerHTML = `
+          <h3 class="text-lg font-semibold mb-1">${row.SKU} - ${row.ESTILO}</h3>
+          <p class="text-sm mb-2">
+            <span id="desc-short-m-${index}">${shortDesc}</span>
+            <span id="desc-full-m-${index}" class="hidden cursor-pointer" onclick="toggleDesc(${index}, true)">${row.DESCRIPCION}</span>
+          </p>
+          <button onclick="showDetail('${row.SKU}')" 
+            class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200 text-sm">
+            Ver detalles
+          </button>
+        `;
+        cardsContainer.appendChild(card);
+      });
+    }
+
+    // 🔎 Render opciones de filtro
     function renderFilterOptions() {
       const estilos = [...new Set(products.map(p => p.ESTILO).filter(Boolean))];
       estilos.sort();
@@ -113,14 +156,18 @@
       });
     }
 
+    // 🎛 Evento de filtro
     filterEstilo.addEventListener("change", () => {
       const value = filterEstilo.value;
       filteredProducts = value
         ? products.filter(p => p.ESTILO === value)
         : [...products];
+      currentPage = 1;
       renderTable();
+      renderCards();
     });
 
+    // 🔎 Vista detalle
     function showDetail(sku) {
       const product = products.find((p) => p.SKU === sku);
       if (!product) return;
@@ -148,6 +195,7 @@
       listView.classList.remove("hidden");
     });
 
+    // 🔗 Convierte link de Drive a URL de tu Apps Script
     function driveToDirect(url) {
       if (!url) return "";
       const match = url.match(/[-\w]{25,}/);
@@ -155,21 +203,45 @@
       return `${SCRIPT_URL}?id=${id}`;
     }
 
-    // 👉 Función para expandir/colapsar descripciones
-    function toggleDesc(index) {
-      const shortEl = document.getElementById(`desc-short-${index}`);
-      const fullEl = document.getElementById(`desc-full-${index}`);
-      const btn = shortEl.nextElementSibling.nextElementSibling;
+    // 🔀 Toggle descripción
+    function toggleDesc(index, mobile = false) {
+      const shortEl = document.getElementById(`desc-short-${mobile ? "m-" : ""}${index}`);
+      const fullEl = document.getElementById(`desc-full-${mobile ? "m-" : ""}${index}`);
+      shortEl.classList.toggle("hidden");
+      fullEl.classList.toggle("hidden");
+    }
 
-      if (fullEl.classList.contains("hidden")) {
-        shortEl.classList.add("hidden");
-        fullEl.classList.remove("hidden");
-        btn.textContent = "Ver menos";
-      } else {
-        shortEl.classList.remove("hidden");
-        fullEl.classList.add("hidden");
-        btn.textContent = "Ver más";
-      }
+    // 📌 Render paginación
+    function renderPagination() {
+      const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+      pagination.innerHTML = "";
+
+      if (totalPages <= 1) return;
+
+      const prevBtn = document.createElement("button");
+      prevBtn.textContent = "Anterior";
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.className = "px-3 py-1 border rounded " + (prevBtn.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
+      prevBtn.onclick = () => {
+        currentPage--;
+        renderTable();
+      };
+      pagination.appendChild(prevBtn);
+
+      const pageInfo = document.createElement("span");
+      pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+      pageInfo.className = "px-3";
+      pagination.appendChild(pageInfo);
+
+      const nextBtn = document.createElement("button");
+      nextBtn.textContent = "Siguiente";
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.className = "px-3 py-1 border rounded " + (nextBtn.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
+      nextBtn.onclick = () => {
+        currentPage++;
+        renderTable();
+      };
+      pagination.appendChild(nextBtn);
     }
   </script>
 </body>
