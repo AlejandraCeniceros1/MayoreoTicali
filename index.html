@@ -105,11 +105,12 @@
 
     // Función que convierte un link de Drive o un ID en URL válida vía Apps Script
     function driveToDirect(url) {
-      if (!url) return "";
-      const match = url.match(/[-\w]{25,}/); // extraer ID
-      const id = match ? match[0] : url;
-      return `${SCRIPT_URL}?id=${id}`;
+        if (!url) return "";
+        const match = url.match(/[-\w]{25,}/); // extrae el ID del link de Drive
+        const id = match ? match[0] : url;
+        return `${SCRIPT_URL}?id=${id}`;
     }
+
   </script>
 </body>
 </html>
