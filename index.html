@@ -8,18 +8,17 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-stone-50 text-stone-800">
-
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</h1>
 
-    <!-- Controles -->
+    <!-- Controles (solo en listado) -->
     <section id="controls" class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
       <label for="filterEstilo" class="font-medium">Estilo:</label>
       <select id="filterEstilo" class="border rounded px-3 py-2 w-full sm:w-56">
         <option value="">Todos</option>
       </select>
 
-      <input id="searchBox" type="text" placeholder="Buscar SKU/estilo/descripción…" 
+      <input id="searchBox" type="text" placeholder="Buscar SKU/estilo/descripción…"
         class="border rounded px-3 py-2 w-full sm:w-80" />
     </section>
 
@@ -51,10 +50,10 @@
     </section>
   </main>
 
-  <!-- Modal -->
+  <!-- Modal (iframe grande) -->
   <div id="imageModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50">
-    <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl font-bold cursor-pointer">&times;</span>
-    <iframe id="modalFrame" class="max-w-[90%] max-h-[85%] rounded shadow-lg border bg-white"></iframe>
+    <button id="closeModal" class="absolute top-4 right-6 text-white text-3xl font-bold">&times;</button>
+    <iframe id="modalFrame" class="w-[96vw] h-[88vh] rounded shadow-lg border bg-white"></iframe>
   </div>
 
   <script>
@@ -129,6 +128,7 @@
       return { slice: filteredProducts.slice(start, end), startIndex: start };
     }
 
+    // Tabla (desktop)
     function renderTable() {
       tableBody.innerHTML = "";
       const { slice, startIndex } = getPageProducts();
@@ -151,6 +151,7 @@
       renderPagination(paginationDesktop);
     }
 
+    // Tarjetas (móvil)
     function renderCards() {
       cardsContainer.innerHTML = "";
       const { slice } = getPageProducts();
@@ -188,25 +189,39 @@
       container.appendChild(next);
     }
 
+    // Detalle con iframes (+ overlay click)
     window.showDetail = function(sku) {
       const product = products.find(p => p.SKU === sku);
       if (!product) return;
+
       listView.classList.add("hidden");
       document.getElementById("controls").classList.add("hidden");
       detailView.classList.remove("hidden");
+
       const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
+
       detailCard.innerHTML = `
-        <h2 class="text-xl font-bold mb-2">${product.SKU} - ${product.ESTILO || ""}</h2>
+        <h2 class="text-xl font-bold mb-3">${product.SKU} - ${product.ESTILO || ""}</h2>
         <p class="mb-4">${product.DESCRIPCION || ""}</p>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           ${
             imgs.length
-            ? imgs.map(url => `
-                <div onclick="openModal('${driveToDirect(url)}')" class="cursor-pointer">
-                  <iframe src="${driveToDirect(url)}" class="w-full h-72 border rounded"></iframe>
-                </div>
-              `).join("")
-            : `<div class="w-full h-72 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">Imagen no disponible</div>`
+            ? imgs.map(url => {
+                const src = driveToDirect(url);
+                return `
+                  <div class="relative group">
+                    <!-- el iframe muestra tu <img> del Apps Script -->
+                    <iframe src="${src}" class="w-full h-80 border rounded pointer-events-none"></iframe>
+                    <!-- overlay invisible que SÍ capta el clic -->
+                    <button onclick="openModal('${src}')" aria-label="Ampliar imagen"
+                      class="absolute inset-0 w-full h-full"></button>
+                    <!-- hint en desktop -->
+                    <div class="hidden sm:block absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">
+                      Ampliar
+                    </div>
+                  </div>`;
+              }).join("")
+            : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">Imagen no disponible</div>`
           }
         </div>`;
     };
@@ -217,21 +232,28 @@
       listView.classList.remove("hidden");
     });
 
+    // Modal: abre con iframe grande (funciona en desktop y móvil)
     window.openModal = function(url) {
       modalFrame.src = url;
       imageModal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
     };
-    closeModal.addEventListener("click", () => {
+
+    function closeImageModal() {
       imageModal.classList.add("hidden");
       modalFrame.src = "";
-    });
+      document.body.style.overflow = "";
+    }
+
+    closeModal.addEventListener("click", closeImageModal);
     imageModal.addEventListener("click", e => {
-      if (e.target === imageModal) {
-        imageModal.classList.add("hidden");
-        modalFrame.src = "";
-      }
+      if (e.target === imageModal) closeImageModal();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && !imageModal.classList.contains("hidden")) closeImageModal();
     });
 
+    // Convierte link de Drive a tu WebApp
     function driveToDirect(url) {
       if (!url) return "";
       const match = url.match(/[-\w]{25,}/);
