@@ -12,7 +12,7 @@
   <main class="max-w-6xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-4">Catálogo TiCali Mayoreo</h1>
 
-    <!-- Tabla de productos -->
+    <!-- 📋 Tabla de productos -->
     <section id="listView">
       <table class="min-w-full border text-sm bg-white shadow rounded">
         <thead class="bg-stone-200">
@@ -27,7 +27,7 @@
       </table>
     </section>
 
-    <!-- Vista de detalle -->
+    <!-- 🔎 Vista de detalle -->
     <section id="detailView" class="hidden">
       <button id="backBtn" class="my-4 px-3 py-1 border rounded bg-white">← Volver</button>
       <div id="detailCard" class="p-4 bg-white shadow rounded"></div>
@@ -35,11 +35,11 @@
   </main>
 
   <script>
-    // 📌 Tu Google Sheet publicado como CSV
+    // 📌 CSV publicado desde Google Sheets
     const SHEET_CSV_URL =
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vRr6ByVJanmXZIyC1DgtNQdo674sIJig_cpGiwGEL42RpB1YXZokgT00tEwWac6GrC14dEZ5vEwuCxM/pub?gid=0&single=true&output=csv";
 
-    // 📌 Tu Apps Script URL real
+    // 📌 Tu Apps Script publicado como WebApp
     const SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbyvWDsll9xUW_XZn8ZNB9G0tuAYhZGDRl_tU5kTTiLpK-Zbi0gQHLRmp4yqPIj5CfnHrQ/exec";
 
@@ -51,7 +51,7 @@
 
     let products = [];
 
-    // Parsear CSV desde Sheets
+    // 📥 Leer el CSV desde Sheets
     Papa.parse(SHEET_CSV_URL, {
       download: true,
       header: true,
@@ -61,7 +61,7 @@
       },
     });
 
-    // Renderizar tabla
+    // 📋 Renderizar tabla
     function renderTable() {
       tableBody.innerHTML = "";
       products.forEach((row) => {
@@ -82,7 +82,7 @@
       });
     }
 
-    // Renderizar vista de detalle
+    // 🔎 Vista de detalle
     function showDetail(sku) {
       const product = products.find((p) => p.SKU === sku);
       if (!product) return;
@@ -96,12 +96,13 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           ${[product.Imagen1, product.Imagen2, product.Imagen3]
             .map((url) =>
-                url
+              url
                 ? `<iframe src="${driveToDirect(url)}" class="w-full h-48 border rounded"></iframe>`
-                : `<div class="w-full h-48 flex items-center justify-center border bg-gray-100 text-gray-500 rounded">Imagen no disponible</div>`
-            )   
+                : `<div class="w-full h-48 flex items-center justify-center border bg-gray-100 text-gray-500 rounded">
+                     Imagen no disponible
+                   </div>`
+            )
             .join("")}
-
         </div>
       `;
     }
@@ -111,7 +112,7 @@
       listView.classList.remove("hidden");
     });
 
-    // Convierte link de Drive → Apps Script
+    // 🔗 Convierte links de Drive a URLs de tu Apps Script
     function driveToDirect(url) {
       if (!url) return "";
       const match = url.match(/[-\w]{25,}/);
