@@ -15,7 +15,7 @@
   </div>
 
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-    <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</h1>
+    <h1 class="text-2xl font-bold mb-6 text-center">Catálogo5454545454 TiCali Mayoreo</h1>
 
     <!-- Controles -->
     <section id="controls" class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
@@ -59,7 +59,7 @@
   <div id="lightbox" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50">
     <button id="closeLightbox" class="absolute top-4 right-6 text-white text-2xl">&times;</button>
     <button id="prevLightbox" class="absolute left-4 text-white text-2xl">&#10094;</button>
-    <img id="lightboxImg" src="" class="max-w-[95%] max-h-[95%] object-contain" />
+    <iframe id="lightboxImg" src="" class="max-w-[95%] max-h-[95%] object-contain" />
     <button id="nextLightbox" class="absolute right-4 text-white text-2xl">&#10095;</button>
   </div>
 
@@ -198,7 +198,7 @@
                 ? currentImages.map((url, i) => {
                     const src = driveToDirect(url);
                     return `
-                      <img src="${src}"
+                      <iframe src="${src}"
                         class="w-full aspect-square object-cover rounded cursor-zoom-in"
                         onclick="openLightbox(${i})"
                       />`;
