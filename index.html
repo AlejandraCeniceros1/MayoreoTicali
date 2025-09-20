@@ -7,6 +7,13 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
+
+<!-- Loader general -->
+<div id="globalLoader" class="hidden fixed inset-0 bg-white/80 flex items-center justify-center z-50">
+  <div class="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+</div>
+
+
 <body class="bg-stone-50 text-stone-800">
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</h1>
@@ -191,40 +198,48 @@
 
     // Detalle con iframes (+ overlay click)
     window.showDetail = function(sku) {
+
+      document.getElementById("globalLoader").classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
       if (!product) return;
 
       listView.classList.add("hidden");
       document.getElementById("controls").classList.add("hidden");
       detailView.classList.remove("hidden");
+      setTimeout(() => {
+          listView.classList.add("hidden");
+          document.getElementById("controls").classList.add("hidden");
+          detailView.classList.remove("hidden");
 
-      const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
+          const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
 
-      detailCard.innerHTML = `
-        <h2 class="text-xl font-bold mb-3">${product.SKU} - ${product.ESTILO || ""}</h2>
-        <p class="mb-4">${product.DESCRIPCION || ""}</p>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          ${
-            imgs.length
-            ? imgs.map(url => {
-                const src = driveToDirect(url);
-                return `
-                  <div class="relative group">
-                    <!-- el iframe muestra tu <img> del Apps Script -->
-                    <iframe src="${src}" class="w-full h-80 border rounded pointer-events-none"></iframe>
-                    <!-- overlay invisible que SÍ capta el clic -->
-                    <button onclick="openModal('${src}')" aria-label="Ampliar imagen"
-                      class="absolute inset-0 w-full h-full"></button>
-                    <!-- hint en desktop -->
-                    <div class="hidden sm:block absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">
-                      Ampliar
-                    </div>
-                  </div>`;
-              }).join("")
-            : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">Imagen no disponible</div>`
-          }
-        </div>`;
-    };
+          detailCard.innerHTML = `
+            <h2 class="text-xl font-bold mb-3">${product.SKU} - ${product.ESTILO || ""}</h2>
+            <p class="mb-4">${product.DESCRIPCION || ""}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              ${
+                imgs.length
+                ? imgs.map(url => {
+                    const src = driveToDirect(url);
+                    return `
+                      <div class="relative group">
+                        <!-- el iframe muestra tu <img> del Apps Script -->
+                        <iframe src="${src}" class="w-full h-80 border rounded pointer-events-none"></iframe>
+                        <!-- overlay invisible que SÍ capta el clic -->
+                        <button onclick="openModal('${src}')" aria-label="Ampliar imagen"
+                          class="absolute inset-0 w-full h-full"></button>
+                        <!-- hint en desktop -->
+                        <div class="hidden sm:block absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">
+                          Ampliar
+                        </div>
+                      </div>`;
+                  }).join("")
+                : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">Imagen no disponible</div>`
+              }
+            </div>`;
+            document.getElementById("globalLoader").classList.add("hidden");
+      }, 300);
+    }
 
     backBtn.addEventListener("click", () => {
       detailView.classList.add("hidden");
