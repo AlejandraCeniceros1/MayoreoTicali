@@ -15,7 +15,7 @@
   </div>
 
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-    <h1 class="text-2xl font-bold mb-6 text-center">Catálogo5454545454 TiCali Mayoreo</h1>
+    <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</h1>
 
     <!-- Controles -->
     <section id="controls" class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
@@ -55,11 +55,12 @@
     </section>
   </main>
 
-  <!-- Lightbox minimalista -->
+  <!-- Lightbox minimalista con iframe -->
   <div id="lightbox" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50">
     <button id="closeLightbox" class="absolute top-4 right-6 text-white text-2xl">&times;</button>
     <button id="prevLightbox" class="absolute left-4 text-white text-2xl">&#10094;</button>
-    <iframe id="lightboxImg" src="" class="max-w-[95%] max-h-[95%] object-contain" />
+    <iframe id="lightboxFrame"
+      class="w-[96vw] h-[96vw] max-w-[600px] max-h-[600px] aspect-square border-none bg-black"></iframe>
     <button id="nextLightbox" class="absolute right-4 text-white text-2xl">&#10095;</button>
   </div>
 
@@ -81,7 +82,7 @@
 
     // Lightbox
     const lightbox = document.getElementById("lightbox");
-    const lightboxImg = document.getElementById("lightboxImg");
+    const lightboxFrame = document.getElementById("lightboxFrame");
     const closeLightbox = document.getElementById("closeLightbox");
     const prevLightbox = document.getElementById("prevLightbox");
     const nextLightbox = document.getElementById("nextLightbox");
@@ -176,7 +177,7 @@
       });
     }
 
-    // Detalle con imágenes clicables
+    // Detalle con iframes clicables
     window.showDetail = function(sku) {
       globalLoader.classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
@@ -199,9 +200,10 @@
                     const src = driveToDirect(url);
                     return `
                       <iframe src="${src}"
-                        class="w-full aspect-square object-cover rounded cursor-zoom-in"
-                        onclick="openLightbox(${i})"
-                      />`;
+                        class="w-full aspect-square border rounded cursor-zoom-in"
+                        style="border:none; overflow:hidden"
+                        onclick="openLightbox(${i})">
+                      </iframe>`;
                   }).join("")
                 : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">
                     Imagen no disponible
@@ -218,28 +220,28 @@
       listView.classList.remove("hidden");
     });
 
-    // Lightbox
+    // Lightbox con iframes
     window.openLightbox = function(index) {
       currentIndex = index;
-      lightboxImg.src = driveToDirect(currentImages[currentIndex]);
+      lightboxFrame.src = driveToDirect(currentImages[currentIndex]);
       lightbox.classList.remove("hidden");
       document.body.style.overflow = "hidden";
     };
 
     closeLightbox.addEventListener("click", () => {
       lightbox.classList.add("hidden");
-      lightboxImg.src = "";
+      lightboxFrame.src = "";
       document.body.style.overflow = "";
     });
 
     prevLightbox.addEventListener("click", () => {
       currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
-      lightboxImg.src = driveToDirect(currentImages[currentIndex]);
+      lightboxFrame.src = driveToDirect(currentImages[currentIndex]);
     });
 
     nextLightbox.addEventListener("click", () => {
       currentIndex = (currentIndex + 1) % currentImages.length;
-      lightboxImg.src = driveToDirect(currentImages[currentIndex]);
+      lightboxFrame.src = driveToDirect(currentImages[currentIndex]);
     });
 
     function driveToDirect(url) {
