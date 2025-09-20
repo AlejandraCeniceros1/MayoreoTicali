@@ -55,19 +55,18 @@
     </section>
   </main>
 
-    <!-- Imagen fullscreen -->
-  <div id="fullscreenViewer" class="hidden fixed inset-0 bg-black z-50 flex items-center justify-center">
-    <button id="closeFull" class="absolute top-4 right-6 text-white text-2xl font-bold">&times;</button>
-    <button id="prevImg" class="absolute left-4 text-white text-2xl font-bold">&#10094;</button>
-    <button id="nextImg" class="absolute right-4 text-white text-2xl font-bold">&#10095;</button>
-    
-    <!-- Iframe ocupa 100% pantalla -->
+  <!-- Imagen fullscreen -->
+  <div id="fullscreenViewer" class="hidden fixed inset-0 bg-black z-50">
+    <button id="closeFull" class="absolute top-4 right-6 text-white text-2xl font-bold z-50">&times;</button>
+    <button id="prevImg" class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-2xl font-bold z-50">&#10094;</button>
+    <button id="nextImg" class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-2xl font-bold z-50">&#10095;</button>
+
+    <!-- Imagen a pantalla completa -->
     <iframe id="fullFrame" 
-      class="w-screen h-screen"
+      class="absolute inset-0 w-full h-full"
       style="border:none; background:black;">
     </iframe>
   </div>
-
 
   <script>
     const SHEET_CSV_URL =
@@ -180,6 +179,16 @@
       fullFrame.src = "";
       document.body.style.overflow = "";
     };
+
+    // cerrar clickeando el fondo negro
+    fullscreenViewer.addEventListener("click", e => {
+      if (e.target === fullscreenViewer) {
+        fullscreenViewer.classList.add("hidden");
+        fullFrame.src = "";
+        document.body.style.overflow = "";
+      }
+    });
+
     prevImg.onclick = () => {
       if (currentIndex > 0) {
         currentIndex--;
