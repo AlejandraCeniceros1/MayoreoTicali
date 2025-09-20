@@ -55,18 +55,12 @@
     </section>
   </main>
 
-  <!-- Lightbox minimalista -->
-  <div id="lightbox" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50">
-    <!-- Loader dentro del lightbox -->
-    <div id="lightboxLoader" class="absolute inset-0 flex items-center justify-center">
-      <div class="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-    </div>
-    <!-- Controles -->
-    <button id="closeLightbox" class="absolute top-4 right-6 text-white text-xl">&times;</button>
-    <button id="prevLightbox" class="absolute left-4 text-white text-2xl">&#10094;</button>
-    <iframe id="lightboxFrame"
-      class="max-w-[95vw] max-h-[95vh] aspect-square border-none bg-black"></iframe>
-    <button id="nextLightbox" class="absolute right-4 text-white text-2xl">&#10095;</button>
+  <!-- Imagen fullscreen -->
+  <div id="fullscreenViewer" class="hidden fixed inset-0 bg-black z-50 flex items-center justify-center">
+    <button id="closeFull" class="absolute top-4 right-6 text-white text-2xl font-bold">&times;</button>
+    <button id="prevImg" class="absolute left-4 text-white text-2xl font-bold">&#10094;</button>
+    <button id="nextImg" class="absolute right-4 text-white text-2xl font-bold">&#10095;</button>
+    <iframe id="fullFrame" class="max-w-[96vw] max-h-[96vh] aspect-square" style="border:none;"></iframe>
   </div>
 
   <script>
@@ -85,19 +79,16 @@
     const searchBox = document.getElementById("searchBox");
     const globalLoader = document.getElementById("globalLoader");
 
-    // Lightbox
-    const lightbox = document.getElementById("lightbox");
-    const lightboxFrame = document.getElementById("lightboxFrame");
-    const lightboxLoader = document.getElementById("lightboxLoader");
-    const closeLightbox = document.getElementById("closeLightbox");
-    const prevLightbox = document.getElementById("prevLightbox");
-    const nextLightbox = document.getElementById("nextLightbox");
+    const fullscreenViewer = document.getElementById("fullscreenViewer");
+    const fullFrame = document.getElementById("fullFrame");
+    const closeFull = document.getElementById("closeFull");
+    const prevImg = document.getElementById("prevImg");
+    const nextImg = document.getElementById("nextImg");
 
     let products = [];
     let filteredProducts = [];
     let currentPage = 1;
     const itemsPerPage = 15;
-
     let currentImages = [];
     let currentIndex = 0;
 
@@ -124,68 +115,15 @@
       });
     }
 
-    filterEstilo.addEventListener("change", applyFilters);
-    searchBox.addEventListener("input", applyFilters);
-
-    function applyFilters() {
-      const estilo = filterEstilo.value.toLowerCase();
-      const search = searchBox.value.toLowerCase();
-      filteredProducts = products.filter(p => {
-        const matchEstilo = !estilo || (p.ESTILO && p.ESTILO.toLowerCase() === estilo);
-        const matchSearch = !search ||
-          (p.SKU && p.SKU.toLowerCase().includes(search)) ||
-          (p.ESTILO && p.ESTILO.toLowerCase().includes(search)) ||
-          (p.DESCRIPCION && p.DESCRIPCION.toLowerCase().includes(search));
-        return matchEstilo && matchSearch;
-      });
-      currentPage = 1;
-      renderTable();
-      renderCards();
+    function driveToDirect(url) {
+      if (!url) return "";
+      const match = url.match(/[-\w]{25,}/);
+      const id = match ? match[0] : url;
+      return `${SCRIPT_URL}?id=${id}`;
     }
 
-    function getPageProducts() {
-      const start = (currentPage - 1) * itemsPerPage;
-      const end = start + itemsPerPage;
-      return { slice: filteredProducts.slice(start, end), startIndex: start };
-    }
-
-    function renderTable() {
-      tableBody.innerHTML = "";
-      const { slice } = getPageProducts();
-      slice.forEach(row => {
-        const isLong = (row.DESCRIPCION || "").length > 80;
-        const shortDesc = isLong
-          ? `${row.DESCRIPCION.substring(0, 80)} <b class="cursor-pointer">...</b>`
-          : row.DESCRIPCION || "";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="p-2 border text-center">${row.SKU}</td>
-          <td class="p-2 border text-center">${row.ESTILO || ""}</td>
-          <td class="p-2 border text-left">${shortDesc}</td>
-          <td class="p-2 border text-center">
-            <button onclick="showDetail('${row.SKU}')" class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200">Ver detalles</button>
-          </td>`;
-        tableBody.appendChild(tr);
-      });
-    }
-
-    function renderCards() {
-      cardsContainer.innerHTML = "";
-      const { slice } = getPageProducts();
-      slice.forEach(row => {
-        const card = document.createElement("div");
-        card.className = "p-4 bg-white shadow rounded border";
-        card.innerHTML = `
-          <h3 class="text-lg font-semibold mb-1">${row.SKU} - ${row.ESTILO || ""}</h3>
-          <p class="text-sm mb-2">${row.DESCRIPCION || ""}</p>
-          <button onclick="showDetail('${row.SKU}')" class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200 text-sm">Ver detalles</button>`;
-        cardsContainer.appendChild(card);
-      });
-    }
-
-    // Vista de detalle
-    // Vista de detalle
-    window.showDetail = function(sku) {
+    // Render detalle con loaders en iframes
+    window.showDetail = function (sku) {
       globalLoader.classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
       if (!product) return;
@@ -195,7 +133,8 @@
       detailView.classList.remove("hidden");
 
       setTimeout(() => {
-        currentImages = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
+        const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
+        currentImages = imgs.map(url => driveToDirect(url));
 
         detailCard.innerHTML = `
           <h2 class="text-xl font-bold mb-3">${product.SKU} - ${product.ESTILO || ""}</h2>
@@ -203,86 +142,50 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             ${
               currentImages.length
-                ? currentImages.map((url, i) => {
-                    const src = driveToDirect(url);
-                    const loaderId = `imgLoader-${i}`;
-                    const frameId = `imgFrame-${i}`;
-                    return `
-                      <div class="relative w-full aspect-square border rounded bg-gray-50">
-                        <!-- loader -->
-                        <div id="${loaderId}" class="absolute inset-0 flex items-center justify-center">
-                          <div class="w-8 h-8 border-4 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                        <!-- iframe -->
-                        <iframe id="${frameId}" src="${src}" 
-                          class="w-full h-full rounded"
-                          style="border:none; overflow:hidden"></iframe>
-                        <!-- overlay para capturar click -->
-                        <button onclick="openLightbox(${i})"
-                          class="absolute inset-0 cursor-zoom-in"></button>
-                      </div>`;
-                  }).join("")
-                : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">
-                    Imagen no disponible
-                  </div>`
+                ? currentImages.map((src, idx) => `
+                  <div class="relative aspect-square bg-gray-100 rounded flex items-center justify-center">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                      <div class="w-8 h-8 border-4 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <iframe src="${src}" 
+                      class="w-full h-full rounded absolute inset-0"
+                      style="border:none;"
+                      onload="this.previousElementSibling.style.display='none'"
+                      onclick="openFullscreen(${idx})">
+                    </iframe>
+                  </div>`).join("")
+                : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">Imagen no disponible</div>`
             }
           </div>`;
-
-        // activar loaders de iframes
-        currentImages.forEach((url, i) => {
-          const frame = document.getElementById(`imgFrame-${i}`);
-          const loader = document.getElementById(`imgLoader-${i}`);
-          frame.onload = () => {
-            loader.classList.add("hidden");
-          };
-        });
-
         globalLoader.classList.add("hidden");
       }, 300);
     };
 
-
-    backBtn.addEventListener("click", () => {
-      detailView.classList.add("hidden");
-      document.getElementById("controls").classList.remove("hidden");
-      listView.classList.remove("hidden");
-    });
-
-    // Lightbox con loader
-    window.openLightbox = function(index) {
-      currentIndex = index;
-      lightboxLoader.classList.remove("hidden");
-      lightboxFrame.src = driveToDirect(currentImages[currentIndex]);
-      lightbox.classList.remove("hidden");
+    // Fullscreen minimal
+    window.openFullscreen = function (idx) {
+      currentIndex = idx;
+      fullFrame.src = currentImages[currentIndex];
+      fullscreenViewer.classList.remove("hidden");
       document.body.style.overflow = "hidden";
-
-      lightboxFrame.onload = () => {
-        lightboxLoader.classList.add("hidden");
-      };
     };
 
-    closeLightbox.addEventListener("click", () => {
-      lightbox.classList.add("hidden");
-      lightboxFrame.src = "";
+    closeFull.onclick = () => {
+      fullscreenViewer.classList.add("hidden");
+      fullFrame.src = "";
       document.body.style.overflow = "";
-    });
-
-    prevLightbox.addEventListener("click", () => {
-      currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
-      openLightbox(currentIndex);
-    });
-
-    nextLightbox.addEventListener("click", () => {
-      currentIndex = (currentIndex + 1) % currentImages.length;
-      openLightbox(currentIndex);
-    });
-
-    function driveToDirect(url) {
-      if (!url) return "";
-      const match = url.match(/[-\w]{25,}/);
-      const id = match ? match[0] : url;
-      return `${SCRIPT_URL}?id=${id}`;
-    }
+    };
+    prevImg.onclick = () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        fullFrame.src = currentImages[currentIndex];
+      }
+    };
+    nextImg.onclick = () => {
+      if (currentIndex < currentImages.length - 1) {
+        currentIndex++;
+        fullFrame.src = currentImages[currentIndex];
+      }
+    };
   </script>
 </body>
 </html>
