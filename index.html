@@ -53,6 +53,7 @@
       <button id="backBtn" class="my-4 px-3 py-2 border rounded bg-white shadow-sm">← Volver</button>
       <div id="detailCard" class="p-4 bg-white shadow rounded"></div>
     </section>
+
   </main>
 
     <!-- Modal imágenes -->
@@ -180,16 +181,17 @@
       });
     }
 
+    // Detalle sin modal, imágenes limpias
     window.showDetail = function(sku) {
-      globalLoader.classList.remove("hidden");
+      document.getElementById("globalLoader").classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
       if (!product) return;
 
-      setTimeout(() => {
-        listView.classList.add("hidden");
-        document.getElementById("controls").classList.add("hidden");
-        detailView.classList.remove("hidden");
+      listView.classList.add("hidden");
+      document.getElementById("controls").classList.add("hidden");
+      detailView.classList.remove("hidden");
 
+      setTimeout(() => {
         const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
 
         detailCard.innerHTML = `
@@ -198,23 +200,24 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             ${
               imgs.length
-              ? imgs.map(url => {
-                  const src = driveToDirect(url);
-                  return `
-                    <div class="relative group flex items-center justify-center bg-gray-50 border rounded h-80">
-                      <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-8 h-8 border-4 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                      <iframe src="${src}" class="w-full h-80 border rounded z-10 relative pointer-events-none" onload="this.previousElementSibling.style.display='none'"></iframe>
-                      <button onclick="openModal('${src}')" class="absolute inset-0 w-full h-full"></button>
-                    </div>`;
-                }).join("")
-              : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">Imagen no disponible</div>`
+                ? imgs.map(url => {
+                    const src = driveToDirect(url);
+                    return `
+                      <iframe src="${src}"
+                        class="w-full aspect-square border rounded"
+                        style="border:none; overflow:hidden"
+                        onclick="window.open('${src}','_blank')">
+                      </iframe>`;
+                  }).join("")
+                : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">
+                    Imagen no disponible
+                  </div>`
             }
           </div>`;
-        globalLoader.classList.add("hidden");
-      }, 400);
+        document.getElementById("globalLoader").classList.add("hidden");
+      }, 300);
     };
+
 
     backBtn.addEventListener("click", () => {
       detailView.classList.add("hidden");
