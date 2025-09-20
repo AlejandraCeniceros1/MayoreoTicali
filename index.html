@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Catálogo TiCali Mayorasassaeo</title>
+  <title>Catálogo TiCali Mayoreo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
@@ -15,7 +15,7 @@
   </div>
 
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-    <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</asasash1>
+    <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</h1>
 
     <!-- Controles -->
     <section id="controls" class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
@@ -182,7 +182,7 @@
       });
     }
 
-        // Detalle
+    // Detalle
     window.showDetail = function(sku) {
       globalLoader.classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
@@ -208,11 +208,12 @@
                         <div class="absolute inset-0 flex items-center justify-center">
                           <div class="w-8 h-8 border-4 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
                         </div>
-                        <img src="${src}"
-                          class="w-full h-full object-cover rounded cursor-zoom-in"
+                        <iframe src="${src}"
+                          class="w-full h-full border rounded absolute inset-0"
+                          style="border:none; overflow:hidden"
                           onload="this.previousElementSibling.remove()"
-                          onclick="openLightbox(${i})"
-                        />
+                          onclick="openLightbox(${i})">
+                        </iframe>
                       </div>`;
                   }).join("")
                 : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">
@@ -223,7 +224,6 @@
         globalLoader.classList.add("hidden");
       }, 300);
     };
-
 
     // Lightbox funciones
     window.openLightbox = function(index) {
