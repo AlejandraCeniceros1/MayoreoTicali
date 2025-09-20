@@ -184,6 +184,7 @@
     }
 
     // Vista de detalle
+    // Vista de detalle
     window.showDetail = function(sku) {
       globalLoader.classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
@@ -204,21 +205,42 @@
               currentImages.length
                 ? currentImages.map((url, i) => {
                     const src = driveToDirect(url);
+                    const loaderId = `imgLoader-${i}`;
+                    const frameId = `imgFrame-${i}`;
                     return `
-                      <iframe src="${src}"
-                        class="w-full aspect-square border rounded cursor-zoom-in"
-                        style="border:none; overflow:hidden"
-                        onclick="openLightbox(${i})">
-                      </iframe>`;
+                      <div class="relative w-full aspect-square border rounded bg-gray-50">
+                        <!-- loader -->
+                        <div id="${loaderId}" class="absolute inset-0 flex items-center justify-center">
+                          <div class="w-8 h-8 border-4 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <!-- iframe -->
+                        <iframe id="${frameId}" src="${src}" 
+                          class="w-full h-full rounded"
+                          style="border:none; overflow:hidden"></iframe>
+                        <!-- overlay para capturar click -->
+                        <button onclick="openLightbox(${i})"
+                          class="absolute inset-0 cursor-zoom-in"></button>
+                      </div>`;
                   }).join("")
                 : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">
                     Imagen no disponible
                   </div>`
             }
           </div>`;
+
+        // activar loaders de iframes
+        currentImages.forEach((url, i) => {
+          const frame = document.getElementById(`imgFrame-${i}`);
+          const loader = document.getElementById(`imgLoader-${i}`);
+          frame.onload = () => {
+            loader.classList.add("hidden");
+          };
+        });
+
         globalLoader.classList.add("hidden");
       }, 300);
     };
+
 
     backBtn.addEventListener("click", () => {
       detailView.classList.add("hidden");
