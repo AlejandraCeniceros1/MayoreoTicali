@@ -55,20 +55,21 @@
     </section>
   </main>
 
-  <!-- Modal imágenes -->
+    <!-- Modal imágenes -->
   <div id="imageModal" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50">
     <button id="closeModal" class="absolute top-4 right-6 text-white text-3xl font-bold z-50">&times;</button>
 
     <!-- Loader dentro del modal -->
-    <div id="modalLoader" class="absolute inset-0 flex items-center justify-center">
+    <div id="modalLoader" class="absolute inset-0 flex items-center justify-center z-40">
       <div class="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <!-- Imagen (iframe) -->
+    <!-- Imagen (iframe 600x600 sin bordes ni fondo) -->
     <iframe id="modalFrame"
-      class="max-w-[96vw] max-h-[96vh] aspect-square rounded shadow-lg bg-black"
-      style="border:none"></iframe>
+      class="w-[96vw] h-[96vw] max-w-[600px] max-h-[600px] aspect-square"
+      style="border:none; background:black"></iframe>
   </div>
+
 
   <script>
     const SHEET_CSV_URL =
@@ -221,7 +222,7 @@
       listView.classList.remove("hidden");
     });
 
-    // Modal con loader
+      // Modal con loader (sin bordes blancos)
     window.openModal = function(url) {
       modalLoader.classList.remove("hidden");
       modalFrame.src = url;
@@ -232,6 +233,7 @@
         modalLoader.classList.add("hidden");
       };
     };
+
 
     function closeImageModal() {
       imageModal.classList.add("hidden");
