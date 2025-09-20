@@ -55,12 +55,12 @@
     </section>
   </main>
 
-  <!-- Lightbox (fullscreen preview) -->
+  <!-- Lightbox minimalista -->
   <div id="lightbox" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50">
-    <img id="lightboxImg" src="" alt="Vista previa"
-      class="max-w-[100vw] max-h-[100vh] object-contain">
-    <!-- Loader del lightbox -->
-    <div id="lightboxLoader" class="absolute w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+    <button id="closeLightbox" class="absolute top-4 right-6 text-white text-2xl">&times;</button>
+    <button id="prevLightbox" class="absolute left-4 text-white text-2xl">&#10094;</button>
+    <img id="lightboxImg" src="" class="max-w-[95%] max-h-[95%] object-contain" />
+    <button id="nextLightbox" class="absolute right-4 text-white text-2xl">&#10095;</button>
   </div>
 
   <script>
@@ -77,19 +77,22 @@
     const backBtn = document.getElementById("backBtn");
     const filterEstilo = document.getElementById("filterEstilo");
     const searchBox = document.getElementById("searchBox");
-    const paginationDesktop = document.getElementById("paginationDesktop");
-    const paginationMobile = document.getElementById("paginationMobile");
     const globalLoader = document.getElementById("globalLoader");
 
     // Lightbox
     const lightbox = document.getElementById("lightbox");
     const lightboxImg = document.getElementById("lightboxImg");
-    const lightboxLoader = document.getElementById("lightboxLoader");
+    const closeLightbox = document.getElementById("closeLightbox");
+    const prevLightbox = document.getElementById("prevLightbox");
+    const nextLightbox = document.getElementById("nextLightbox");
 
     let products = [];
     let filteredProducts = [];
     let currentPage = 1;
     const itemsPerPage = 15;
+
+    let currentImages = [];
+    let currentIndex = 0;
 
     Papa.parse(SHEET_CSV_URL, {
       download: true,
@@ -173,7 +176,7 @@
       });
     }
 
-    // Detalle con preview limpio
+    // Detalle con imágenes clicables
     window.showDetail = function(sku) {
       globalLoader.classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
@@ -184,28 +187,21 @@
       detailView.classList.remove("hidden");
 
       setTimeout(() => {
-        const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
+        currentImages = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
 
         detailCard.innerHTML = `
           <h2 class="text-xl font-bold mb-3">${product.SKU} - ${product.ESTILO || ""}</h2>
           <p class="mb-4">${product.DESCRIPCION || ""}</p>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             ${
-              imgs.length
-                ? imgs.map(url => {
+              currentImages.length
+                ? currentImages.map((url, i) => {
                     const src = driveToDirect(url);
                     return `
-                      <div class="relative aspect-square bg-gray-100 rounded overflow-hidden">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                          <div class="w-8 h-8 border-4 border-gray-300 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                        <iframe src="${src}"
-                          class="w-full h-full border rounded absolute inset-0"
-                          style="border:none; overflow:hidden"
-                          onload="this.previousElementSibling.remove()"
-                          onclick="openLightbox('${src}')">
-                        </iframe>
-                      </div>`;
+                      <img src="${src}"
+                        class="w-full aspect-square object-cover rounded cursor-zoom-in"
+                        onclick="openLightbox(${i})"
+                      />`;
                   }).join("")
                 : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">
                     Imagen no disponible
@@ -216,31 +212,34 @@
       }, 300);
     };
 
-    // Lightbox preview
-    window.openLightbox = function(url) {
-      lightbox.classList.remove("hidden");
-      lightboxLoader.classList.remove("hidden");
-      lightboxImg.src = url;
-      lightboxImg.onload = () => {
-        lightboxLoader.classList.add("hidden");
-      };
-    };
-
-    lightbox.addEventListener("click", () => {
-      lightbox.classList.add("hidden");
-      lightboxImg.src = "";
-    });
-    document.addEventListener("keydown", e => {
-      if (e.key === "Escape") {
-        lightbox.classList.add("hidden");
-        lightboxImg.src = "";
-      }
-    });
-
     backBtn.addEventListener("click", () => {
       detailView.classList.add("hidden");
       document.getElementById("controls").classList.remove("hidden");
       listView.classList.remove("hidden");
+    });
+
+    // Lightbox
+    window.openLightbox = function(index) {
+      currentIndex = index;
+      lightboxImg.src = driveToDirect(currentImages[currentIndex]);
+      lightbox.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+    };
+
+    closeLightbox.addEventListener("click", () => {
+      lightbox.classList.add("hidden");
+      lightboxImg.src = "";
+      document.body.style.overflow = "";
+    });
+
+    prevLightbox.addEventListener("click", () => {
+      currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
+      lightboxImg.src = driveToDirect(currentImages[currentIndex]);
+    });
+
+    nextLightbox.addEventListener("click", () => {
+      currentIndex = (currentIndex + 1) % currentImages.length;
+      lightboxImg.src = driveToDirect(currentImages[currentIndex]);
     });
 
     function driveToDirect(url) {
