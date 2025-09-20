@@ -56,9 +56,18 @@
   </main>
 
   <!-- Modal imágenes -->
-  <div id="imageModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50">
-    <button id="closeModal" class="absolute top-4 right-6 text-white text-3xl font-bold">&times;</button>
-    <iframe id="modalFrame" class="w-[96vw] h-[88vh] rounded shadow-lg border bg-white"></iframe>
+  <div id="imageModal" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50">
+    <button id="closeModal" class="absolute top-4 right-6 text-white text-3xl font-bold z-50">&times;</button>
+
+    <!-- Loader dentro del modal -->
+    <div id="modalLoader" class="absolute inset-0 flex items-center justify-center">
+      <div class="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Imagen (iframe) -->
+    <iframe id="modalFrame"
+      class="max-w-[96vw] max-h-[96vh] aspect-square rounded shadow-lg bg-black"
+      style="border:none"></iframe>
   </div>
 
   <script>
@@ -80,6 +89,7 @@
     const imageModal = document.getElementById("imageModal");
     const modalFrame = document.getElementById("modalFrame");
     const closeModal = document.getElementById("closeModal");
+    const modalLoader = document.getElementById("modalLoader");
     const globalLoader = document.getElementById("globalLoader");
 
     let products = [];
@@ -96,7 +106,7 @@
         renderFilterOptions();
         renderTable();
         renderCards();
-        globalLoader.classList.add("hidden"); // 🔥 ocultamos loader cuando termina
+        globalLoader.classList.add("hidden");
       },
     });
 
@@ -135,7 +145,6 @@
       return { slice: filteredProducts.slice(start, end), startIndex: start };
     }
 
-    // Tabla (desktop)
     function renderTable() {
       tableBody.innerHTML = "";
       const { slice } = getPageProducts();
@@ -156,7 +165,6 @@
       });
     }
 
-    // Tarjetas (móvil)
     function renderCards() {
       cardsContainer.innerHTML = "";
       const { slice } = getPageProducts();
@@ -171,7 +179,6 @@
       });
     }
 
-    // Vista detalle con loaders en imágenes
     window.showDetail = function(sku) {
       globalLoader.classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
@@ -214,12 +221,18 @@
       listView.classList.remove("hidden");
     });
 
-    // Modal
+    // Modal con loader
     window.openModal = function(url) {
+      modalLoader.classList.remove("hidden");
       modalFrame.src = url;
       imageModal.classList.remove("hidden");
       document.body.style.overflow = "hidden";
+
+      modalFrame.onload = () => {
+        modalLoader.classList.add("hidden");
+      };
     };
+
     function closeImageModal() {
       imageModal.classList.add("hidden");
       modalFrame.src = "";
