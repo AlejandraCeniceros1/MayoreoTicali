@@ -10,14 +10,14 @@
 
 <body class="bg-stone-50 text-stone-800">
   <!-- Loader global -->
-  <div id="globalLoader" class="hidden fixed inset-0 bg-white/70 flex items-center justify-center z-50 transition-opacity duration-200">
+  <div id="globalLoader" class="fixed inset-0 bg-white/70 flex items-center justify-center z-50">
     <div class="w-12 h-12 border-4 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
   </div>
 
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">Catálogo TiCali Mayoreo</h1>
 
-    <!-- Controles (solo en listado) -->
+    <!-- Controles -->
     <section id="controls" class="mb-6 flex flex-col sm:flex-row items-center gap-3 justify-center">
       <label for="filterEstilo" class="font-medium">Estilo:</label>
       <select id="filterEstilo" class="border rounded px-3 py-2 w-full sm:w-56">
@@ -44,7 +44,6 @@
         </table>
         <div id="paginationDesktop" class="flex justify-center items-center gap-2 mt-4"></div>
       </div>
-
       <div id="cardsContainer" class="sm:hidden grid gap-4"></div>
       <div id="paginationMobile" class="sm:hidden flex justify-center items-center gap-2 mt-4"></div>
     </section>
@@ -56,15 +55,10 @@
     </section>
   </main>
 
-  <!-- Modal (galería) -->
-  <div id="imageModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+  <!-- Modal imágenes -->
+  <div id="imageModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50">
     <button id="closeModal" class="absolute top-4 right-6 text-white text-3xl font-bold">&times;</button>
-
-    <!-- Flechas -->
-    <button id="prevImage" class="absolute left-4 text-white text-4xl font-bold px-2">&#10094;</button>
-    <button id="nextImage" class="absolute right-4 text-white text-4xl font-bold px-2">&#10095;</button>
-
-    <iframe id="modalFrame" class="w-[90vw] h-[90vh] rounded shadow-lg border bg-white"></iframe>
+    <iframe id="modalFrame" class="w-[96vw] h-[88vh] rounded shadow-lg border bg-white"></iframe>
   </div>
 
   <script>
@@ -86,17 +80,12 @@
     const imageModal = document.getElementById("imageModal");
     const modalFrame = document.getElementById("modalFrame");
     const closeModal = document.getElementById("closeModal");
-    const prevImageBtn = document.getElementById("prevImage");
-    const nextImageBtn = document.getElementById("nextImage");
+    const globalLoader = document.getElementById("globalLoader");
 
     let products = [];
     let filteredProducts = [];
     let currentPage = 1;
     const itemsPerPage = 15;
-
-    // Galería
-    let currentImages = [];
-    let currentImageIndex = 0;
 
     Papa.parse(SHEET_CSV_URL, {
       download: true,
@@ -107,6 +96,7 @@
         renderFilterOptions();
         renderTable();
         renderCards();
+        globalLoader.classList.add("hidden"); // 🔥 ocultamos loader cuando termina
       },
     });
 
@@ -148,8 +138,8 @@
     // Tabla (desktop)
     function renderTable() {
       tableBody.innerHTML = "";
-      const { slice, startIndex } = getPageProducts();
-      slice.forEach((row, i) => {
+      const { slice } = getPageProducts();
+      slice.forEach(row => {
         const isLong = (row.DESCRIPCION || "").length > 80;
         const shortDesc = isLong
           ? `${row.DESCRIPCION.substring(0, 80)} <b class="cursor-pointer">...</b>`
@@ -164,7 +154,6 @@
           </td>`;
         tableBody.appendChild(tr);
       });
-      renderPagination(paginationDesktop);
     }
 
     // Tarjetas (móvil)
@@ -180,69 +169,43 @@
           <button onclick="showDetail('${row.SKU}')" class="px-3 py-1 border rounded bg-stone-100 hover:bg-stone-200 text-sm">Ver detalles</button>`;
         cardsContainer.appendChild(card);
       });
-      renderPagination(paginationMobile);
     }
 
-    function renderPagination(container) {
-      const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-      container.innerHTML = "";
-      if (totalPages <= 1) return;
-      const prev = document.createElement("button");
-      prev.textContent = "Anterior";
-      prev.disabled = currentPage === 1;
-      prev.className = "px-3 py-1 border rounded " + (prev.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
-      prev.onclick = () => { currentPage--; renderTable(); renderCards(); };
-      container.appendChild(prev);
-      const info = document.createElement("span");
-      info.textContent = `Página ${currentPage} de ${totalPages}`;
-      info.className = "px-3";
-      container.appendChild(info);
-      const next = document.createElement("button");
-      next.textContent = "Siguiente";
-      next.disabled = currentPage === totalPages;
-      next.className = "px-3 py-1 border rounded " + (next.disabled ? "bg-gray-200 text-gray-400" : "bg-white hover:bg-stone-200");
-      next.onclick = () => { currentPage++; renderTable(); renderCards(); };
-      container.appendChild(next);
-    }
-
-    // Detalle con iframes
+    // Vista detalle con loaders en imágenes
     window.showDetail = function(sku) {
-      document.getElementById("globalLoader").classList.remove("hidden");
+      globalLoader.classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
       if (!product) return;
 
-      listView.classList.add("hidden");
-      document.getElementById("controls").classList.add("hidden");
-      detailView.classList.remove("hidden");
-
       setTimeout(() => {
-        currentImages = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
+        listView.classList.add("hidden");
+        document.getElementById("controls").classList.add("hidden");
+        detailView.classList.remove("hidden");
+
+        const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
 
         detailCard.innerHTML = `
           <h2 class="text-xl font-bold mb-3">${product.SKU} - ${product.ESTILO || ""}</h2>
           <p class="mb-4">${product.DESCRIPCION || ""}</p>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             ${
-              currentImages.length
-              ? currentImages.map((url, idx) => {
+              imgs.length
+              ? imgs.map(url => {
                   const src = driveToDirect(url);
                   return `
-                    <div class="relative group aspect-square">
-                      <iframe src="${src}" class="w-full h-full border rounded pointer-events-none object-cover"></iframe>
-                      <button onclick="openModal(${idx})" aria-label="Ampliar imagen"
-                        class="absolute inset-0 w-full h-full"></button>
-                      <div class="hidden sm:block absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100">
-                        Ampliar
+                    <div class="relative group flex items-center justify-center bg-gray-50 border rounded h-80">
+                      <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-8 h-8 border-4 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                       </div>
+                      <iframe src="${src}" class="w-full h-80 border rounded z-10 relative pointer-events-none" onload="this.previousElementSibling.style.display='none'"></iframe>
+                      <button onclick="openModal('${src}')" class="absolute inset-0 w-full h-full"></button>
                     </div>`;
                 }).join("")
-              : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">
-                  Imagen no disponible
-                </div>`
+              : `<div class="w-full h-80 flex items-center justify-center border bg-gray-100 text-gray-500 rounded col-span-full">Imagen no disponible</div>`
             }
           </div>`;
-        document.getElementById("globalLoader").classList.add("hidden");
-      }, 300);
+        globalLoader.classList.add("hidden");
+      }, 400);
     };
 
     backBtn.addEventListener("click", () => {
@@ -251,44 +214,22 @@
       listView.classList.remove("hidden");
     });
 
-    // Modal galería
-    window.openModal = function(index) {
-      currentImageIndex = index;
-      modalFrame.src = driveToDirect(currentImages[index]);
+    // Modal
+    window.openModal = function(url) {
+      modalFrame.src = url;
       imageModal.classList.remove("hidden");
       document.body.style.overflow = "hidden";
     };
-
     function closeImageModal() {
       imageModal.classList.add("hidden");
       modalFrame.src = "";
       document.body.style.overflow = "";
     }
-
     closeModal.addEventListener("click", closeImageModal);
     imageModal.addEventListener("click", e => {
       if (e.target === imageModal) closeImageModal();
     });
 
-    prevImageBtn.addEventListener("click", () => {
-      if (currentImages.length === 0) return;
-      currentImageIndex = (currentImageIndex - 1 + currentImages.length) % currentImages.length;
-      modalFrame.src = driveToDirect(currentImages[currentImageIndex]);
-    });
-
-    nextImageBtn.addEventListener("click", () => {
-      if (currentImages.length === 0) return;
-      currentImageIndex = (currentImageIndex + 1) % currentImages.length;
-      modalFrame.src = driveToDirect(currentImages[currentImageIndex]);
-    });
-
-    document.addEventListener("keydown", e => {
-      if (e.key === "Escape" && !imageModal.classList.contains("hidden")) closeImageModal();
-      if (e.key === "ArrowLeft") prevImageBtn.click();
-      if (e.key === "ArrowRight") nextImageBtn.click();
-    });
-
-    // Convierte link de Drive a tu WebApp
     function driveToDirect(url) {
       if (!url) return "";
       const match = url.match(/[-\w]{25,}/);
