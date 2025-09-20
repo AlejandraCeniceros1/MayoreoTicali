@@ -55,15 +55,12 @@
     </section>
   </main>
 
-  <!-- Lightbox fullscreen -->
+  <!-- Lightbox (fullscreen preview) -->
   <div id="lightbox" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50">
-    <!-- Loader -->
+    <img id="lightboxImg" src="" alt="Vista previa"
+      class="max-w-[100vw] max-h-[100vh] object-contain">
+    <!-- Loader del lightbox -->
     <div id="lightboxLoader" class="absolute w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-    <!-- Imagen -->
-    <img id="lightboxImg" src="" alt="Vista previa" class="max-w-[100vw] max-h-[100vh] object-contain">
-    <!-- Zonas invisibles para navegar -->
-    <div id="lightboxPrev" class="absolute left-0 top-0 w-1/3 h-full cursor-pointer"></div>
-    <div id="lightboxNext" class="absolute right-0 top-0 w-1/3 h-full cursor-pointer"></div>
   </div>
 
   <script>
@@ -88,17 +85,11 @@
     const lightbox = document.getElementById("lightbox");
     const lightboxImg = document.getElementById("lightboxImg");
     const lightboxLoader = document.getElementById("lightboxLoader");
-    const lightboxPrev = document.getElementById("lightboxPrev");
-    const lightboxNext = document.getElementById("lightboxNext");
 
     let products = [];
     let filteredProducts = [];
     let currentPage = 1;
     const itemsPerPage = 15;
-
-    // Estado de navegación
-    let currentImages = [];
-    let currentIndex = 0;
 
     Papa.parse(SHEET_CSV_URL, {
       download: true,
@@ -182,7 +173,7 @@
       });
     }
 
-    // Detalle
+    // Detalle con preview limpio
     window.showDetail = function(sku) {
       globalLoader.classList.remove("hidden");
       const product = products.find(p => p.SKU === sku);
@@ -193,15 +184,15 @@
       detailView.classList.remove("hidden");
 
       setTimeout(() => {
-        currentImages = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
+        const imgs = [product.Imagen1, product.Imagen2, product.Imagen3].filter(Boolean);
 
         detailCard.innerHTML = `
           <h2 class="text-xl font-bold mb-3">${product.SKU} - ${product.ESTILO || ""}</h2>
           <p class="mb-4">${product.DESCRIPCION || ""}</p>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             ${
-              currentImages.length
-                ? currentImages.map((url, i) => {
+              imgs.length
+                ? imgs.map(url => {
                     const src = driveToDirect(url);
                     return `
                       <div class="relative aspect-square bg-gray-100 rounded overflow-hidden">
@@ -212,7 +203,7 @@
                           class="w-full h-full border rounded absolute inset-0"
                           style="border:none; overflow:hidden"
                           onload="this.previousElementSibling.remove()"
-                          onclick="openLightbox(${i})">
+                          onclick="openLightbox('${src}')">
                         </iframe>
                       </div>`;
                   }).join("")
@@ -225,45 +216,25 @@
       }, 300);
     };
 
-    // Lightbox funciones
-    window.openLightbox = function(index) {
-      currentIndex = index;
+    // Lightbox preview
+    window.openLightbox = function(url) {
       lightbox.classList.remove("hidden");
-      loadLightboxImage();
-    };
-
-    function loadLightboxImage() {
       lightboxLoader.classList.remove("hidden");
-      const src = driveToDirect(currentImages[currentIndex]);
-      lightboxImg.src = src;
+      lightboxImg.src = url;
       lightboxImg.onload = () => {
         lightboxLoader.classList.add("hidden");
       };
-    }
+    };
 
     lightbox.addEventListener("click", () => {
       lightbox.classList.add("hidden");
       lightboxImg.src = "";
     });
-
-    // Navegación
-    lightboxPrev.addEventListener("click", e => {
-      e.stopPropagation();
-      currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
-      loadLightboxImage();
-    });
-
-    lightboxNext.addEventListener("click", e => {
-      e.stopPropagation();
-      currentIndex = (currentIndex + 1) % currentImages.length;
-      loadLightboxImage();
-    });
-
     document.addEventListener("keydown", e => {
-      if (lightbox.classList.contains("hidden")) return;
-      if (e.key === "Escape") lightbox.classList.add("hidden");
-      if (e.key === "ArrowLeft") lightboxPrev.click();
-      if (e.key === "ArrowRight") lightboxNext.click();
+      if (e.key === "Escape") {
+        lightbox.classList.add("hidden");
+        lightboxImg.src = "";
+      }
     });
 
     backBtn.addEventListener("click", () => {
